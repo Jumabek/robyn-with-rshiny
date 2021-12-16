@@ -14,6 +14,7 @@
 ## Install and load libraries
 # install.packages("remotes") # Install remotes first if not already happend
 library(Robyn) # remotes::install_github("facebookexperimental/Robyn/R")
+library(glue)
 set.seed(123)
 
 ## force multicore when using RStudio
@@ -25,6 +26,16 @@ options(future.fork.enable = TRUE)
 ## See here for more info about installing Python packages via reticulate
 ## https://rstudio.github.io/reticulate/articles/python_packages.html
 
+#create the output directory
+output_dir <- paste(getwd(), "output", sep="/")
+
+
+#if the output directory doesn't exist, create it
+if (file.exists(output_dir)){
+  glue("{output_dir} already exists")
+} else {
+  dir.create(file.path(output_dir), showWarnings = TRUE)
+}
 
 
 ################################################################
@@ -41,7 +52,7 @@ data("dt_prophet_holidays")
 head(dt_prophet_holidays)
 
 ## Set robyn_object. It must have extension .RDS. The object name can be different than Robyn:
-robyn_object <- "~/robyn/RobynHood/MyRobyn.RDS"
+robyn_object <- paste(output_dir,"MyRobyn.RDS", sep="/")
 
 ################################################################
 #### Step 2a: For first time user: Model specification in 4 steps
@@ -280,10 +291,21 @@ InputCollect <- robyn_inputs(InputCollect = InputCollect, hyperparameters = hype
 ################################################################
 #### Step 3: Build initial model
 
+source("robyn_run55.R")
+OutputCollect <- robyn_run55(
+  
+  InputCollect = InputCollect # feed in all model specification
+  , plot_folder = output_dir # plots will be saved in the same folder as robyn_object
+  , pareto_fronts = 3
+  , plot_pareto = TRUE
+  # , calibration_constraint = 0.1 # run ?robyn_run to see description
+  # , lambda_control = 1 # run ?robyn_run to see description
+)
 # Run ?robyn_run to check parameter definition
 OutputCollect <- robyn_run(
+
   InputCollect = InputCollect # feed in all model specification
-  , plot_folder = robyn_object # plots will be saved in the same folder as robyn_object
+  , plot_folder = output_dir # plots will be saved in the same folder as robyn_object
   , pareto_fronts = 3
   , plot_pareto = TRUE
   # , calibration_constraint = 0.1 # run ?robyn_run to see description
