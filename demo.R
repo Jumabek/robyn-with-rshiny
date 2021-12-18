@@ -27,6 +27,7 @@ options(future.fork.enable = TRUE)
 ## https://rstudio.github.io/reticulate/articles/python_packages.html
 
 #create the output directory
+load.project(override.config = NULL)
 output_dir <- paste(getwd(), "output", sep="/")
 
 
@@ -291,7 +292,7 @@ InputCollect <- robyn_inputs(InputCollect = InputCollect, hyperparameters = hype
 ################################################################
 #### Step 3: Build initial model
 
-source("robyn_run55.R")
+#source("robyn_run55.R")
 OutputCollect <- robyn_run55(
   
   InputCollect = InputCollect # feed in all model specification
@@ -326,7 +327,7 @@ OutputCollect <- robyn_run(
 ## your business reality
 
 OutputCollect$allSolutions # get all model IDs in result
-select_model <- "1_4_2" # select one from above
+select_model <- "1_10_5" # select one from above
 robyn_save(robyn_object = robyn_object # model object location and name
            , select_model = select_model # selected model ID
            , InputCollect = InputCollect # all model input
