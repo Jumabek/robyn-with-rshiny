@@ -40,3 +40,6 @@ vignettes/*.pdf
 
 # output files
 output/
+
+#remove the python environment
+python/virtualenv
