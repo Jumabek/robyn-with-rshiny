@@ -59,13 +59,12 @@ robyn_run <- function(InputCollect,
 
   #####################################
   #### Set local environment
-
+  
   if (!"hyperparameters" %in% names(InputCollect)) {
     stop("Must provide 'hyperparameters' in robyn_inputs()'s output first")
   }
-
   t0 <- Sys.time()
-
+  library(data.table)
   # check path
   check_robyn_object(plot_folder)
   plot_folder <- check_filedir(plot_folder)
@@ -262,8 +261,9 @@ robyn_run <- function(InputCollect,
   resultHypParamPar <- resultHypParam[robynPareto %in% pareto_fronts_vec]
   xDecompAggPar <- xDecompAgg[robynPareto %in% pareto_fronts_vec]
   resp_collect <- foreach(
-    respN = seq_along(decompSpendDistPar$rn)
-    , .combine = rbind) %dorng% {
+    respN = seq_along(decompSpendDistPar$rn),
+    .export = ls(globalenv()),
+    .combine = rbind, .packages = c("ggplot2", "doParallel", "foreach", "data.table", "Robyn", "patchwork", "grid", "scales")) %dorng% {
       get_resp <- robyn_response(
         paid_media_var = decompSpendDistPar$rn[respN],
         select_model = decompSpendDistPar[respN, solID],
@@ -499,16 +499,20 @@ robyn_run <- function(InputCollect,
     plotWaterfall <- xDecompAgg[robynPareto == pf]
     uniqueSol <- plotMediaShare[, unique(solID)]
 
-    parallelResult <- foreach(sid = uniqueSol) %dorng% {
-
+    parallelResult <- foreach(sid = uniqueSol,
+                              .export = ls(globalenv()),
+                              .packages = c("ggplot2", "doParallel", "foreach", "data.table", "Robyn", "patchwork", "grid", "scales")) %dorng% {
+      #TODO
+      .libPaths("C:/Users/Bastien/Documents/R/win-library/4.1")
       ## plot spend x effect share comparison
       plotMediaShareLoop <- plotMediaShare[solID == sid]
+      #TODO save data
       rsq_train_plot <- plotMediaShareLoop[, round(unique(rsq_train), 4)]
       nrmse_plot <- plotMediaShareLoop[, round(unique(nrmse), 4)]
       decomp_rssd_plot <- plotMediaShareLoop[, round(unique(decomp.rssd), 4)]
       mape_lift_plot <- ifelse(!is.null(InputCollect$calibration_input), plotMediaShareLoop[, round(unique(mape), 4)], NA)
 
-      suppressWarnings(plotMediaShareLoop <- melt.data.table(plotMediaShareLoop, id.vars = c("rn", "nrmse", "decomp.rssd", "rsq_train"), measure.vars = c("spend_share", "effect_share", "roi_total", "cpa_total")))
+      suppressWarnings(plotMediaShareLoop <- data.table::melt.data.table(plotMediaShareLoop, id.vars = c("rn", "nrmse", "decomp.rssd", "rsq_train"), measure.vars = c("spend_share", "effect_share", "roi_total", "cpa_total")))
       plotMediaShareLoop[, rn := factor(rn, levels = sort(InputCollect$paid_media_vars))]
       plotMediaShareLoopBar <- plotMediaShareLoop[variable %in% c("spend_share", "effect_share")]
       # plotMediaShareLoopBar[, variable:= ifelse(variable=="spend_share", "total spend share", "total effect share")]
@@ -516,6 +520,7 @@ robyn_run <- function(InputCollect,
       # plotMediaShareLoopLine[, variable:= "roi_total"]
       line_rm_inf <- !is.infinite(plotMediaShareLoopLine$value)
       ySecScale <- max(plotMediaShareLoopLine$value[line_rm_inf]) / max(plotMediaShareLoopBar$value) * 1.1
+      
 
       p1 <- ggplot(plotMediaShareLoopBar, aes(x = rn, y = value, fill = variable)) +
         geom_bar(stat = "identity", width = 0.5, position = "dodge") +
@@ -540,7 +545,11 @@ robyn_run <- function(InputCollect,
           ),
           y = "", x = ""
         )
-
+      #TODO delete
+      ggsave(paste0(plot_folder, "/", plot_folder_sub, "/", "test.png"),
+             plot = p1,
+             dpi = 600, width = 12, height = 3 * length(levels(dt_plotProphet$variable))
+      )
       ## plot waterfall
       plotWaterfallLoop <- plotWaterfall[solID == sid][order(xDecompPerc)]
       plotWaterfallLoop[, end := cumsum(xDecompPerc)]
@@ -1177,12 +1186,15 @@ robyn_mmm <- function(hyper_collect,
       best_mape <- Inf
 
       doparCollect <- suppressPackageStartupMessages(
-        foreach(i = 1:iterPar) %dorng% { # i = 1
+        foreach(i = 1:iterPar, 
+                .export = ls(globalenv()),
+                .packages = c("ggplot2", "doParallel", "foreach", "data.table", "Robyn", "patchwork", "grid", "scales")) %dorng% { # i = 1
           t1 <- Sys.time()
 
           #####################################
           #### Get hyperparameter sample
-
+          #TODO
+          .libPaths("C:/Users/Bastien/Documents/R/win-library/4.1")
           hypParamSam <- unlist(hypParamSamNG[i])
 
           #### Tranform media with hyperparameters
