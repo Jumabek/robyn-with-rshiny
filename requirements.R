@@ -14,8 +14,8 @@ remotes::install_github("facebookexperimental/Robyn/R")
 ## Load 
 library(reticulate)
 ## Option 1: nevergrad installation via PIP
-virtualenv_create("r-reticulate")
-use_virtualenv("r-reticulate", required = TRUE)
+virtualenv_create("~/.virtualenvs/r-test")
+use_virtualenv("C:/Users/Bastien/.virtualenvs/r-reticulate/Scripts", required = TRUE)
 py_install("nevergrad", pip = TRUE)
 # py_config() # Check your python version and configurations
 ## In case nevergrad still can't be installed,
@@ -47,7 +47,7 @@ library(reticulate)
 ## Option 1: nevergrad installation via PIP
 virtualenv_create("r-reticulate")
 use_virtualenv("r-reticulate", required = TRUE)
-Sys.setenv(RETICULATE_PYTHON = "~/.virtualenvs/r-reticulate/Scripts/python3.9")
+Sys.setenv(RETICULATE_PYTHON = "C:/Users/Bastien/.virtualenvs/r-reticulate/Scripts")
 py_install("nevergrad", pip = TRUE)
 py_config() # Check your python version and configurations
 ## In case nevergrad still can't be installed,
@@ -60,15 +60,3 @@ if (!reticulate::py_module_available("nevergrad")) {
 } else {
   cat("You have nevergrad and it is available to R!\n")
 }
-
-## Option 2: nevergrad installation via conda
-conda_create("r-reticulate", "Python 3.9") # Only works with <= Python 3.9 sofar
-use_condaenv("r-reticulate")
-# conda_install("r-reticulate", "nevergrad", pip=TRUE)
-# py_config() # Check your python version and configurations
-## In case nevergrad still can't be installed,
-## please locate your python file and run this line with your path:
-# use_python("~/Library/r-miniconda/envs/r-reticulate/bin/python3.9")
-# Alternatively, force Python path for reticulate with this:
-# Sys.setenv(RETICULATE_PYTHON = "~/Library/r-miniconda/envs/r-reticulate/bin/python3.9")
-# Finally, reset your R session and re-install Nevergrad with option 2

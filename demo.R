@@ -15,6 +15,9 @@
 # install.packages("remotes") # Install remotes first if not already happend
 library(Robyn) # remotes::install_github("facebookexperimental/Robyn/R")
 library(glue)
+library(ggplot2)
+library(patchwork)
+
 set.seed(123)
 
 ## force multicore when using RStudio
@@ -292,16 +295,7 @@ InputCollect <- robyn_inputs(InputCollect = InputCollect, hyperparameters = hype
 ################################################################
 #### Step 3: Build initial model
 
-#source("robyn_run55.R")
-OutputCollect <- robyn_run55(
-  
-  InputCollect = InputCollect # feed in all model specification
-  , plot_folder = output_dir # plots will be saved in the same folder as robyn_object
-  , pareto_fronts = 3
-  , plot_pareto = TRUE
-  # , calibration_constraint = 0.1 # run ?robyn_run to see description
-  # , lambda_control = 1 # run ?robyn_run to see description
-)
+
 # Run ?robyn_run to check parameter definition
 OutputCollect <- robyn_run(
 

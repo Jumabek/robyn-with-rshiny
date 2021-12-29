@@ -1,18 +1,22 @@
 library(shiny)
+library(ggplot2)
+library(data.table)
+library(Robyn)
 
 
-vars <- setdiff(names(iris), "Species")
+all_fronts <- unique(OutputCollect$xDecompAgg$robynPareto)
+pf = all_fronts[1]
+plotMediaShare <- OutputCollect$xDecompAgg[robynPareto == pf & rn %in% InputCollect$paid_media_vars]
+uniqueSol <- plotMediaShare[, unique(solID)]
 
 # See above for the definitions of ui and server
 ui <- pageWithSidebar(
-  headerPanel('Iris k-means clustering'),
+  headerPanel('Plot Title'),
   sidebarPanel(
-    selectInput('xcol', 'X Variable', vars),
-    selectInput('ycol', 'Y Variable', vars, selected = vars[[2]]),
-    numericInput('clusters', 'Cluster count', 3, min = 1, max = 9)
+    selectInput("sid", "Select sid", uniqueSol)
   ),
   mainPanel(
-    plotOutput('plot1')
+    tableOutput('table1')
   )
 )
   
@@ -20,24 +24,53 @@ ui <- pageWithSidebar(
 server <- function(input, output, session) {
   
   # Combine the selected variables into a new data frame
-  selectedData <- reactive({
-    iris[, c(input$xcol, input$ycol)]
+
+  #select the input ID
+
+  ## plot spend x effect share comparison
+  sid<-reactive({
+    input$sid
   })
   
-  clusters <- reactive({
-    kmeans(selectedData(), input$clusters)
+  plotMediaShareLoop <-reactive({
+    plotMediaShare[solID == sid]
+  }) 
+  
+  rsq_train_plot <- reactive({
+    plotMediaShareLoop[, round(unique(rsq_train), 4)]
   })
   
-  output$plot1 <- renderPlot({
-    palette(c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3",
-              "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999"))
-    
-    par(mar = c(5.1, 4.1, 0, 1))
-    plot(selectedData(),
-         col = clusters()$cluster,
-         pch = 20, cex = 3)
-    points(clusters()$centers, pch = 4, cex = 4, lwd = 4)
+  nrmse_plot <- reactive({
+    plotMediaShareLoop[, round(unique(nrmse), 4)]
   })
+  
+  decomp_rssd_plot <- reactive({
+    plotMediaShareLoop[, round(unique(decomp.rssd), 4)]
+  })
+  mape_lift_plot <- reactive({
+    ifelse(!is.null(InputCollect$calibration_input), plotMediaShareLoop[, round(unique(mape), 4)], NA)
+  })
+  
+  suppressWarnings(plotMediaShareLoop <- reactive({
+    melt.data.table(plotMediaShareLoop, id.vars = c("rn", "nrmse", "decomp.rssd", "rsq_train"), measure.vars = c("spend_share", "effect_share", "roi_total", "cpa_total"))
+    }))
+  
+  plotMediaShareLoopBar <- reactive({
+    plotMediaShareLoop[, rn := factor(rn, levels = sort(InputCollect$paid_media_vars))]
+    plotMediaShareLoop[variable %in% c("spend_share", "effect_share")]
+  })
+  
+  line_rm_inf <- reactive({
+    !is.infinite(plotMediaShareLoopLine$value)
+  })
+  ySecScale <- reactive({
+    max(plotMediaShareLoopLine$value[line_rm_inf]) / max(plotMediaShareLoopBar$value) * 1.1
+  })
+
+  
+  output$table1 <- renderTable({plotMediaShareLoop})
+  
+
   
 }
 
