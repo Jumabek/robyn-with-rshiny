@@ -2,7 +2,7 @@
 library(shinythemes)
 
 
-uiR <- fluidPage(
+ui <- fluidPage(
   
 
   theme = shinytheme("darkly"),
@@ -44,7 +44,7 @@ uiR <- fluidPage(
       # time-consuming.
       actionButton("runButton", "Train Model"),
       h4("Training Status"),
-      textOutput("trainingStatus", style="color:blue"),
+      textOutput("trainingStatus"),
       
       helpText("Note: Once the model is ready",
                "you will be able to select a model output"),

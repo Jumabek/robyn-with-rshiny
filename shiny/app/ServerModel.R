@@ -7,13 +7,10 @@ library(shinybusy)
 #-------------------
 #     server
 #-------------------
-serverR <- function(input, output) {
+server <- function(input, output) {
   #-------------------
   #     run model
   #-------------------
-  #print the environment names
-  print(environmentName(environment()))
-  print(environmentName(globalenv()))
   
   toReturn <- reactiveValues(
     InputCollect = NULL,
