@@ -17,6 +17,13 @@ ui <- fluidPage(
     # Sidebar panel for inputs ----
     sidebarPanel(
       
+      sliderInput(
+        inputId = 'iterations', 
+        label = 'number of iteration',
+        min = 100, max =2000, 
+        value = c(10,90)
+      ),  
+      
       # Input: Select a dataset ----
       selectInput("sid", "Choose a dataset:",
                   choices = uniqueSol),

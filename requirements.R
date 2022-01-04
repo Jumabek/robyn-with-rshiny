@@ -3,6 +3,8 @@ install.packages('DT')
 install.packages('tidyverse')
 install.packages('bigrquery')
 install.packages("remotes") 
+install.packages("shinythemes")
+install.packages("shinybusy")
 remotes::install_github("facebookexperimental/Robyn/R")
 
 

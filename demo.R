@@ -301,8 +301,8 @@ OutputCollect <- robyn_run(
 
   InputCollect = InputCollect # feed in all model specification
   , plot_folder = output_dir # plots will be saved in the same folder as robyn_object
-  , pareto_fronts = 3
-  , plot_pareto = TRUE
+  , pareto_fronts = 1
+  , plot_pareto = False
   # , calibration_constraint = 0.1 # run ?robyn_run to see description
   # , lambda_control = 1 # run ?robyn_run to see description
 )
