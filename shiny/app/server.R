@@ -1,36 +1,20 @@
-
+library(glue)
 library(Robyn)
 library(data.table)
 library(ggplot2)
-library(shinybusy)
 
-#-------------------
-#     server
-#-------------------
 server <- function(input, output) {
-  #-------------------
-  #     run model
-  #-------------------
   
-  toReturn <- reactiveValues(
-    InputCollect = NULL,
-    OutputCollect = NULL,
-    hyperparameters = NULL
-  )
+  var <- reactiveValues()
   
-  output$trainingStatus <- renderText({"Model not trained"})
-  
-  observeEvent(input$runButton, {
-    show_modal_spinner(
-      "circle", 
-      text = "Please Wait, this might take a few minutes ...", 
-      color = "#ffffff"
-    ) # show the modal window
+  #train the model ----
+  observeEvent(input$trainButton, {
+    show_modal_spinner("circle",
+                       text = "Please Wait, this might take a few minutes ...",
+                       color = "#ffffff") # show the modal window
     ## force multicore when using RStudio
-    Sys.setenv(R_FUTURE_FORK_ENABLE="true")
+    Sys.setenv(R_FUTURE_FORK_ENABLE = "true")
     options(future.fork.enable = TRUE)
-    
-    output$trainingStatus <- renderText({"Training model"})
     
     ## Must install the python library Nevergrad once
     ## ATTENTION: The latest Python 3.10 version will cause Nevergrad installation error
@@ -38,9 +22,9 @@ server <- function(input, output) {
     ## https://rstudio.github.io/reticulate/articles/python_packages.html
     
     #create the output directory
-    output_dir <- paste(getwd(), "output", sep="/")
+    output_dir <- paste(getwd(), "output", sep = "/")
     #if the output directory doesn't exist, create it
-    if (file.exists(output_dir)){
+    if (file.exists(output_dir)) {
       glue("{output_dir} already exists")
     } else {
       dir.create(file.path(output_dir), showWarnings = TRUE)
@@ -60,7 +44,7 @@ server <- function(input, output) {
     head(dt_prophet_holidays)
     
     ## Set robyn_object. It must have extension .RDS. The object name can be different than Robyn:
-    robyn_object <- paste(output_dir,"MyRobyn.RDS", sep="/")
+    robyn_object <- paste(output_dir, "MyRobyn.RDS", sep = "/")
     
     ################################################################
     #### Step 2a: For first time user: Model specification in 4 steps
@@ -70,98 +54,144 @@ server <- function(input, output) {
     # Run ?robyn_inputs to check parameter definition
     InputCollect <- robyn_inputs(
       dt_input = dt_simulated_weekly
-      ,dt_holidays = dt_prophet_holidays
+      ,
+      dt_holidays = dt_prophet_holidays
       
       ### set variables
       
-      ,date_var = "DATE" # date format must be "2020-01-01"
-      ,dep_var = "revenue" # there should be only one dependent variable
-      ,dep_var_type = "revenue" # "revenue" or "conversion"
+      ,
+      date_var = "DATE" # date format must be "2020-01-01"
+      ,
+      dep_var = "revenue" # there should be only one dependent variable
+      ,
+      dep_var_type = "revenue" # "revenue" or "conversion"
       
-      ,prophet_vars = c("trend", "season", "holiday") # "trend","season", "weekday", "holiday"
+      ,
+      prophet_vars = c("trend", "season", "holiday") # "trend","season", "weekday", "holiday"
       # are provided and case-sensitive. Recommended to at least keep Trend & Holidays
-      ,prophet_signs = c("default","default", "default") # c("default", "positive", and "negative").
+      ,
+      prophet_signs = c("default", "default", "default") # c("default", "positive", and "negative").
       # Recommend as default.Must be same length as prophet_vars
-      ,prophet_country = "DE"# only one country allowed once. Including national holidays
+      ,
+      prophet_country = "DE"# only one country allowed once. Including national holidays
       # for 59 countries, whose list can be found on our github guide
       
-      ,context_vars = c("competitor_sales_B", "events") # typically competitors, price &
+      ,
+      context_vars = c("competitor_sales_B", "events") # typically competitors, price &
       # promotion, temperature, unemployment rate etc
-      ,context_signs = c("default", "default") # c("default", " positive", and "negative"),
+      ,
+      context_signs = c("default", "default") # c("default", " positive", and "negative"),
       # control the signs of coefficients for baseline variables
       
-      ,paid_media_vars = c("tv_S", "ooh_S"	,	"print_S"	,"facebook_I" ,"search_clicks_P")
+      ,
+      paid_media_vars = c(
+        "tv_S",
+        "ooh_S"	,
+        "print_S"	,
+        "facebook_I" ,
+        "search_clicks_P"
+      )
       # c("tv_S"	,"ooh_S",	"print_S"	,"facebook_I", "facebook_S","search_clicks_P"	,"search_S")
       # we recommend to use media exposure metrics like impressions, GRP etc for the model.
       # If not applicable, use spend instead
-      ,paid_media_signs = c("positive", "positive","positive", "positive", "positive")
+      ,
+      paid_media_signs = c("positive", "positive", "positive", "positive", "positive")
       # c("default", "positive", and "negative"). must have same length as paid_media_vars.
       # Controls the signs of coefficients for media variables
-      ,paid_media_spends = c("tv_S","ooh_S",	"print_S"	,"facebook_S", "search_S")
+      ,
+      paid_media_spends = c("tv_S", "ooh_S",	"print_S"	, "facebook_S", "search_S")
       # spends must have same order and same length as paid_media_vars
       
-      ,organic_vars = c("newsletter")
-      ,organic_signs = c("positive") # must have same length as organic_vars
+      ,
+      organic_vars = c("newsletter")
+      ,
+      organic_signs = c("positive") # must have same length as organic_vars
       
-      ,factor_vars = c("events") # specify which variables in context_vars and
+      ,
+      factor_vars = c("events") # specify which variables in context_vars and
       # organic_vars are factorial
       
       ### set model parameters
       
       ## set cores for parallel computing
-      ,cores = 6 # I am using 6 cores from 8 on my local machine. Use future::availableCores() to find out cores
+      ,
+      cores = 6 # I am using 6 cores from 8 on my local machine. Use future::availableCores() to find out cores
       
       ## set rolling window start
-      ,window_start = "2016-11-23"
-      ,window_end = "2018-08-22"
+      ,
+      window_start = "2016-11-23"
+      ,
+      window_end = "2018-08-22"
       
       ## set model core features
-      ,adstock = "geometric" # geometric, weibull_cdf or weibull_pdf. Both weibull adstocks are more flexible
+      ,
+      adstock = "geometric" # geometric, weibull_cdf or weibull_pdf. Both weibull adstocks are more flexible
       # due to the changing decay rate over time, as opposed to the fixed decay rate for geometric. weibull_pdf
       # allows also lagging effect. Yet weibull adstocks are two-parametric and thus take longer to run.
-      ,iterations = input$iterations  # number of allowed iterations per trial. For the simulated dataset with 11 independent
+      ,
+      iterations = input$iterations  # number of allowed iterations per trial. For the simulated dataset with 11 independent
       # variables, 2000 is recommended for Geometric adsttock, 4000 for weibull_cdf and 6000 for weibull_pdf.
       # The larger the dataset, the more iterations required to reach convergence.
       
-      ,nevergrad_algo = "TwoPointsDE" # recommended algorithm for Nevergrad, the gradient-free
+      ,
+      nevergrad_algo = "TwoPointsDE" # recommended algorithm for Nevergrad, the gradient-free
       # optimisation library https://facebookresearch.github.io/nevergrad/index.html
-      ,trials = input$trials # number of allowed trials. 5 is recommended without calibration,
+      ,
+      trials = input$trials # number of allowed trials. 5 is recommended without calibration,
       # 10 with calibration.
       
       # Time estimation: with geometric adstock, 2000 iterations * 5 trials
       # and 6 cores, it takes less than 1 hour. Both Weibull adstocks take up to twice as much time.
     )
-
-
+    
+    
     
     # Run ?hyper_names to check parameter definition
-    hyper_names(adstock = InputCollect$adstock, all_media = InputCollect$all_media)
+    hyper_names(adstock = InputCollect$adstock,
+                all_media = InputCollect$all_media)
     
     # Example hyperparameters for Geometric adstock
     hyperparameters <- list(
       facebook_I_alphas = c(0.5, 3)
-      ,facebook_I_gammas = c(0.3, 1)
-      ,facebook_I_thetas = c(0, 0.3)
+      ,
+      facebook_I_gammas = c(0.3, 1)
+      ,
+      facebook_I_thetas = c(0, 0.3)
       
-      ,print_S_alphas = c(0.5, 3)
-      ,print_S_gammas = c(0.3, 1)
-      ,print_S_thetas = c(0.1, 0.4)
+      ,
+      print_S_alphas = c(0.5, 3)
+      ,
+      print_S_gammas = c(0.3, 1)
+      ,
+      print_S_thetas = c(0.1, 0.4)
       
-      ,tv_S_alphas = c(0.5, 3)
-      ,tv_S_gammas = c(0.3, 1)
-      ,tv_S_thetas = c(0.3, 0.8)
+      ,
+      tv_S_alphas = c(0.5, 3)
+      ,
+      tv_S_gammas = c(0.3, 1)
+      ,
+      tv_S_thetas = c(0.3, 0.8)
       
-      ,search_clicks_P_alphas = c(0.5, 3)
-      ,search_clicks_P_gammas = c(0.3, 1)
-      ,search_clicks_P_thetas = c(0, 0.3)
+      ,
+      search_clicks_P_alphas = c(0.5, 3)
+      ,
+      search_clicks_P_gammas = c(0.3, 1)
+      ,
+      search_clicks_P_thetas = c(0, 0.3)
       
-      ,ooh_S_alphas = c(0.5, 3)
-      ,ooh_S_gammas = c(0.3, 1)
-      ,ooh_S_thetas = c(0.1, 0.4)
+      ,
+      ooh_S_alphas = c(0.5, 3)
+      ,
+      ooh_S_gammas = c(0.3, 1)
+      ,
+      ooh_S_thetas = c(0.1, 0.4)
       
-      ,newsletter_alphas = c(0.5, 3)
-      ,newsletter_gammas = c(0.3, 1)
-      ,newsletter_thetas = c(0.1, 0.4)
+      ,
+      newsletter_alphas = c(0.5, 3)
+      ,
+      newsletter_gammas = c(0.3, 1)
+      ,
+      newsletter_thetas = c(0.1, 0.4)
     )
     
     # Example hyperparameters for Weibull CDF adstock
@@ -178,7 +208,8 @@ server <- function(input, output) {
     
     #### 2a-3: Third, add hyperparameters into robyn_inputs()
     
-    InputCollect <- robyn_inputs(InputCollect = InputCollect, hyperparameters = hyperparameters)
+    InputCollect <-
+      robyn_inputs(InputCollect = InputCollect, hyperparameters = hyperparameters)
     
     #### 2a-4: Fourth (optional), model calibration / add experimental input
     
@@ -248,44 +279,58 @@ server <- function(input, output) {
     # Run ?robyn_run to check parameter definition
     
     OutputCollect <- robyn_run(
-      
       InputCollect = InputCollect # feed in all model specification
-      , plot_folder = output_dir # plots will be saved in the same folder as robyn_object
-      , pareto_fronts = 1
-      , plot_pareto = FALSE
+      ,
+      plot_folder = output_dir # plots will be saved in the same folder as robyn_object
+      ,
+      pareto_fronts = 1
+      ,
+      plot_pareto = FALSE
       # , calibration_constraint = 0.1 # run ?robyn_run to see description
       # , lambda_control = 1 # run ?robyn_run to see description
     )
     remove_modal_spinner() # remove it when done
     
-    output$trainingStatus <- renderText({"Model trained"})
-    output$modelSid <- renderUI({
-      selectInput("modelSid2", "Select Model Sid", OutputCollect$xDecompAgg[, unique(solID)])
+    output$trainingStatus <- renderText({
+      "Model trained"
     })
-  
-  toReturn$OutputCollect <- OutputCollect
-  toReturn$InputCollect <- InputCollect
-  toReturn$hyperparameters <- hyperparameters
-  
-  return(toReturn)
-  
+    output$selectModelSid <- renderUI({
+      selectInput("modelSid",
+                  "Select Model Sid",
+                  OutputCollect$xDecompAgg[, unique(solID)])
+    })
+    
+    observe(var$OutputCollect <- OutputCollect)
+    observe(var$InputCollect <- InputCollect)
+    observe(var$hyperparameters <- hyperparameters)
+    output$trainingStatus <- renderText("Model was trained successfully")
+    return(var)
+    
   })
-  #-------------------
-  #     plot model
-  #-------------------
+  #end of model trained ----
+
+  
+  #plot plot1 ----
   observeEvent(input$plotButton, {
+    
+    #check if the model exists
+    output$trainCheck <- if(exists('var')){
+      renderText("Model was trained")
+    }else{
+      renderText("Model wasn't found, please consider training the model first")
+    }
+    
     ## plot waterfall
-    plotMediaShare <- toReturn$OutputCollect$xDecompAgg[robynPareto == 1 & rn %in% toReturn$InputCollect$paid_media_vars]
-    output$plotMediaShare <- renderDataTable({plotMediaShare}) 
+    plotMediaShare <- var$OutputCollect$xDecompAgg[robynPareto == 1 & rn %in% var$InputCollect$paid_media_vars]
     #TODO adapt robynpareto, is not supposed to be equal to 1
-    plotMediaShareLoop <- plotMediaShare[solID == input$modelSid2]
+    plotMediaShareLoop <- plotMediaShare[solID == input$modelSid]
     rsq_train_plot <- plotMediaShareLoop[, round(unique(rsq_train), 4)]
     nrmse_plot <- plotMediaShareLoop[, round(unique(nrmse), 4)]
     decomp_rssd_plot <- plotMediaShareLoop[, round(unique(decomp.rssd), 4)]
-    mape_lift_plot <- ifelse(!is.null(toReturn$InputCollect$calibration_input), plotMediaShareLoop[, round(unique(mape), 4)], NA)
+    mape_lift_plot <- ifelse(!is.null(var$InputCollect$calibration_input), plotMediaShareLoop[, round(unique(mape), 4)], NA)
     suppressWarnings(plotMediaShareLoop <- melt.data.table(plotMediaShareLoop, id.vars = c("rn", "nrmse", "decomp.rssd", "rsq_train"), measure.vars = c("spend_share", "effect_share", "roi_total", "cpa_total")))
-    plotWaterfall <- toReturn$OutputCollect$xDecompAgg[robynPareto == 1]
-    plotWaterfallLoop <- plotWaterfall[solID == input$modelSid2][order(xDecompPerc)]
+    plotWaterfall <-var$OutputCollect$xDecompAgg[robynPareto == 1]
+    plotWaterfallLoop <- plotWaterfall[solID == input$modelSid][order(xDecompPerc)]
     plotWaterfallLoop[, end := cumsum(xDecompPerc)]
     plotWaterfallLoop[, end := 1 - end]
     plotWaterfallLoop[, ":="(start = shift(end, fill = 1, type = "lag"),
@@ -293,9 +338,9 @@ server <- function(input, output) {
                              rn = as.factor(rn),
                              sign = as.factor(ifelse(xDecompPerc >= 0, "pos", "neg")))]
     
-    output$plot2<-renderPlot({
+    output$plotWaterfall<-renderPlot({
       
-        ggplot(plotWaterfallLoop, aes(x = id, fill = sign)) +
+      ggplot(plotWaterfallLoop, aes(x = id, fill = sign)) +
         geom_rect(aes(x = rn, xmin = id - 0.45, xmax = id + 0.45, ymin = end, ymax = start), stat = "identity") +
         scale_x_discrete("", breaks = levels(plotWaterfallLoop$rn), labels = plotWaterfallLoop$rn) +
         theme(axis.text.x = element_text(angle = 65, vjust = 0.6), legend.position = c(0.1, 0.1)) +

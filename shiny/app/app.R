@@ -19,15 +19,17 @@ options(future.fork.enable = TRUE)
 
 robyn_object <- "/out/robyn.RDS"
 
-
+#---------------------------
+#    main app
+#---------------------------
 
 library(shiny)
+library(shinythemes)
+library(shinybusy)
 setwd("C:/Users/Bastien/robyn/shiny/app")
-source('uiModel.R')
-source('serverModel.R')
+source('ui.R')
+source('server.R')
 
 
-shinyApp(
-  ui = ui,
-  server = server
-)
+
+shinyApp(ui=ui,server=server)
