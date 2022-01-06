@@ -5,13 +5,11 @@ library(ggplot2)
 
 server <- function(input, output) {
   
-  var <- reactiveValues()
-  
   #train the model ----
   observeEvent(input$trainButton, {
     show_modal_spinner("circle",
                        text = "Please Wait, this might take a few minutes ...",
-                       color = "#ffffff") # show the modal window
+                       color = "#2C2C2C") # show the modal window
     ## force multicore when using RStudio
     Sys.setenv(R_FUTURE_FORK_ENABLE = "true")
     options(future.fork.enable = TRUE)
@@ -288,48 +286,69 @@ server <- function(input, output) {
       plot_pareto = FALSE
       # , calibration_constraint = 0.1 # run ?robyn_run to see description
       # , lambda_control = 1 # run ?robyn_run to see description
+      ,ui=TRUE
     )
     remove_modal_spinner() # remove it when done
-    
+    output$paretoPlot <- renderPlot({OutputCollect$UI$pParFront})
     output$trainingStatus <- renderText({
       "Model trained"
     })
     output$selectModelSid <- renderUI({
       selectInput("modelSid",
                   "Select Model Sid",
-                  OutputCollect$xDecompAgg[, unique(solID)])
+                  OutputCollect$allSolutions)
     })
     
-    observe(var$OutputCollect <- OutputCollect)
-    observe(var$InputCollect <- InputCollect)
-    observe(var$hyperparameters <- hyperparameters)
     output$trainingStatus <- renderText("Model was trained successfully")
-    return(var)
+    
+    #save the data localy
+    save(
+      OutputCollect, 
+      InputCollect, 
+      hyperparameters,
+      robyn_object,
+      file = "55.RData")
+    
     
   })
   #end of model trained ----
-
   
-  #plot plot1 ----
-  observeEvent(input$plotButton, {
+  #load existing model ----
+  observeEvent(input$loadDataButton, {
+    load("55.RData")
+    print(OutputCollect)
+    OutputCollect <<- OutputCollect
+    InputCollect <<- InputCollect
+    hyperparameters <<- hyperparameters
+    robyn_object <<- robyn_object
     
+    output$selectModelSid <- renderUI({
+      selectInput("modelSid",
+                  "Select Model Sid",
+                  OutputCollect$allSolutions)
+    })
+  })
+  #end of load existing model ----
+  
+  #plot model output ----
+  observeEvent(input$plotButton, {
     #check if the model exists
-    output$trainCheck <- if(exists('var')){
+    output$trainCheck <- if(exists('OutputCollect')){
       renderText("Model was trained")
     }else{
       renderText("Model wasn't found, please consider training the model first")
     }
     
     ## plot waterfall
-    plotMediaShare <- var$OutputCollect$xDecompAgg[robynPareto == 1 & rn %in% var$InputCollect$paid_media_vars]
+    plotMediaShare <- OutputCollect$xDecompAgg[robynPareto == 1 & rn %in% InputCollect$paid_media_vars]
     #TODO adapt robynpareto, is not supposed to be equal to 1
     plotMediaShareLoop <- plotMediaShare[solID == input$modelSid]
     rsq_train_plot <- plotMediaShareLoop[, round(unique(rsq_train), 4)]
     nrmse_plot <- plotMediaShareLoop[, round(unique(nrmse), 4)]
     decomp_rssd_plot <- plotMediaShareLoop[, round(unique(decomp.rssd), 4)]
-    mape_lift_plot <- ifelse(!is.null(var$InputCollect$calibration_input), plotMediaShareLoop[, round(unique(mape), 4)], NA)
+    mape_lift_plot <- ifelse(!is.null(InputCollect$calibration_input), plotMediaShareLoop[, round(unique(mape), 4)], NA)
     suppressWarnings(plotMediaShareLoop <- melt.data.table(plotMediaShareLoop, id.vars = c("rn", "nrmse", "decomp.rssd", "rsq_train"), measure.vars = c("spend_share", "effect_share", "roi_total", "cpa_total")))
-    plotWaterfall <-var$OutputCollect$xDecompAgg[robynPareto == 1]
+    plotWaterfall <-OutputCollect$xDecompAgg[robynPareto == 1]
     plotWaterfallLoop <- plotWaterfall[solID == input$modelSid][order(xDecompPerc)]
     plotWaterfallLoop[, end := cumsum(xDecompPerc)]
     plotWaterfallLoop[, end := 1 - end]
@@ -362,6 +381,48 @@ server <- function(input, output) {
         )
       
     })
+    output$allSolutions <- renderText(OutputCollect$allSolutions)
     
+  })
+  #end of plot model output ----
+  
+  #save the model ----
+  observeEvent(input$optimizeButton, {
+    
+    select_model <- input$modelSid # select one from above
+    robyn_save(robyn_object = robyn_object # model object location and name
+               , select_model = select_model # selected model ID
+               , InputCollect = InputCollect # all model input
+               , OutputCollect = OutputCollect # all model output
+    )
+    
+    ## Budget allocator result requires further validation. Please use this result with caution.
+    ## Don't interpret budget allocation result if selected result doesn't meet business expectation
+    
+    # Check media summary for selected model
+    output$mediaSummaryTable <- renderDataTable(
+      OutputCollect$xDecompAgg[solID == select_model & !is.na(mean_spend)
+       , .(rn, coef,mean_spend, mean_response, roi_mean
+       , total_spend, total_response=xDecompAgg, roi_total, solID)]
+    )
+    
+    AllocatorCollect <<- robyn_allocator(
+      robyn_object = robyn_object
+      , select_model = select_model
+      , scenario = input$scenario
+      , expected_spend = input$expected_spend
+      , expected_spend_days = input$expected_spend_days
+      , channel_constr_low = c(0.7, 0.7, 0.7, 0.7, 0.7)
+      , channel_constr_up = c(1.2, 1.5, 1.5, 1.5, 1.5)
+      , ui=TRUE
+    )
+    
+    #allocator ouputs
+    output$budgetAllocatorTable <- renderDataTable(AllocatorCollect$dt_optimOut)
+    output$p12 <- renderPlot({AllocatorCollect$ui$p12})
+    output$p13 <- renderPlot({AllocatorCollect$ui$p13})
+    output$p14 <- renderPlot({AllocatorCollect$ui$p14})
+    
+
   })
 }
