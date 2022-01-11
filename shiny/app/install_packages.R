@@ -10,9 +10,3 @@ install.packages("shinybusy")
 install.packages("shinythemes")
 
 remotes::install_github("facebookexperimental/Robyn/R")
-
-library(reticulate)
-Sys.setenv(RETICULATE_PYTHON = "/usr/bin/python3.8")
-
-virtualenv_create("r-reticulate")
-virtualenv_exists("r-reticulate")
