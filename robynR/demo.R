@@ -8,6 +8,7 @@
 ####################                    Quick guide                   #######################
 #############################################################################################
 
+
 ################################################################
 #### Step 0: setup environment
 
@@ -302,9 +303,10 @@ OutputCollect <- robyn_run(
   InputCollect = InputCollect # feed in all model specification
   , plot_folder = output_dir # plots will be saved in the same folder as robyn_object
   , pareto_fronts = 1
-  , plot_pareto = False
+  , plot_pareto = FALSE
   # , calibration_constraint = 0.1 # run ?robyn_run to see description
   # , lambda_control = 1 # run ?robyn_run to see description
+  ,ui=TRUE
 )
 
 ## Besides one-pager plots: there are 4 csv output saved in the folder for further usage
@@ -321,7 +323,7 @@ OutputCollect <- robyn_run(
 ## your business reality
 
 OutputCollect$allSolutions # get all model IDs in result
-select_model <- "1_10_5" # select one from above
+select_model <- "1_11_1" # select one from above
 robyn_save(robyn_object = robyn_object # model object location and name
            , select_model = select_model # selected model ID
            , InputCollect = InputCollect # all model input
@@ -350,6 +352,7 @@ AllocatorCollect <- robyn_allocator(
   , scenario = "max_historical_response"
   , channel_constr_low = c(0.7, 0.7, 0.7, 0.7, 0.7)
   , channel_constr_up = c(1.2, 1.5, 1.5, 1.5, 1.5)
+  ,ui = TRUE
 )
 
 # View allocator result. Last column "optmResponseUnitTotalLift" is the total response lift.

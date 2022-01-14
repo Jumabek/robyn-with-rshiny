@@ -43,3 +43,9 @@ output/
 
 #remove the python environment
 python/virtualenv
+
+#credentials
+shiny/test/credentials/
+
+#virtual environment
+/venv

@@ -20,14 +20,17 @@ getwd()
 #if working locally
 #setwd("C:/Users/Bastien/robyn/shiny/app")
 
-
+# PART 1 - SETTING THE SCENE ----
+# section 1.0 - load required packages ----
 library(shiny)
 library(shinythemes)
 library(shinybusy)
+library(shinyjs)
 
+# section 1.1 - source module ----
 source('ui.R')
 source('server.R')
-
+source("modules/module_login.R") 
 
 
 app <- shinyApp(ui=ui,server=server)

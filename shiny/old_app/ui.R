@@ -1,8 +1,22 @@
+source("modules/module_login.R") 
+
 ui <- navbarPage(
   "55 Marketing Mix Modeling",
   theme = shinytheme("sandstone"),
+  
+
+  
   #tab training the model----
   tabPanel("Model Training",
+           
+           
+           # login form as defined in the module
+           login_ui(id = "module_login", title = "Please login"),
+           
+           # app 
+           uiOutput(outputId = "display_content_module"),
+           
+           
            sidebarLayout(
              sidebarPanel(
                #interations for the model

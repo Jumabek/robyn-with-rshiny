@@ -5,6 +5,35 @@ library(ggplot2)
 
 server <- function(input, output) {
   
+  # create userbase
+  user_base_module_tbl <- tibble(
+    user_name = "user",
+    password  = "user"
+  )
+  
+  # check credentials vs tibble 
+  validate_password_module <- callModule(
+    module   = validate_pwd, 
+    id       = "module_login", 
+    data     = user_base_module_tbl, 
+    user_col = user_name, 
+    pwd_col  = password
+  )
+  
+  # app 
+  output$display_content_module <- renderUI({
+    
+    req(validate_password_module())
+    
+    div(
+      class = "bg-success",
+      id = "success_module",
+      h4("Access confirmed!"),
+      p("Welcome to your module-secured application!")
+    )
+    
+  })
+  
   #train the model ----
   observeEvent(input$trainButton, {
     show_modal_spinner("circle",

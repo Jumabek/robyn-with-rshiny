@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     python3-venv \
     libglpk40
-
+    
 RUN R -e "install.packages('shiny', repos='http://cran.rstudio.com/')"
 RUN R -e "install.packages('remotes', repos='http://cran.rstudio.com/')"
 RUN R -e "install.packages('reticulate', repos='http://cran.rstudio.com/')"

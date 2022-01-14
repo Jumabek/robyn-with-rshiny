@@ -1,0 +1,7 @@
+INFO  [2022-01-14 11:11:51] File log resset
+INFO  [2022-01-14 11:27:04] Model file was retrieved successfully from GCS bucket
+INFO  [2022-01-14 11:27:05] GCS file data/Model.RData downloaded to Model.RData.
+INFO  [2022-01-14 11:29:22] Model file was retrieved successfully from GCS bucket
+INFO  [2022-01-14 11:29:24] GCS file data/Model.RData downloaded to Model.RData.
+INFO  [2022-01-14 12:01:16] Model file was retrieved successfully from GCS bucket
+INFO  [2022-01-14 12:01:20] GCS file data/Model.RData downloaded to Model.RData.
