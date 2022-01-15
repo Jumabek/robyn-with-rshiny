@@ -1,7 +1,6 @@
 library(Robyn)
 
-allocate <- function(robyn_object,
-                     InputCollect, 
+allocate <- function(InputCollect, 
                      OutputCollect, 
                      select_model, 
                      scenario, 
@@ -24,14 +23,12 @@ allocate <- function(robyn_object,
   # Run ?robyn_allocator to check parameter definition
   # Run the "max_historical_response" scenario: "What's the revenue lift potential with the
   # same historical spend level and what is the spend mix?"
-  robyn_save(robyn_object = robyn_object # model object location and name
-             , select_model = select_model # selected model ID
-             , InputCollect = InputCollect # all model input
-             , OutputCollect = OutputCollect # all model output
-  )
+
   
   AllocatorCollect <- robyn_allocator(
-      robyn_object = robyn_object
+      InputCollect  = InputCollect
+    , OutputCollect = OutputCollect
+    , select_model = select_model 
     , scenario = scenario
     , expected_spend = expected_spend
     , expected_spend_days = expected_spend_days

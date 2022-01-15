@@ -6,24 +6,38 @@ library(sodium)
 library(shinybusy)
 library(reticulate)
 library(log4r)
+library(glue)
+library(dashboardthemes)
+library(shinycssloaders)
 
-# set up environment ----
+#0 ENVIRONMENT SETUP ----
 prod = FALSE
 if(prod == FALSE){
   setwd("C:/Users/Bastien/robyn/shiny/app")
 }
 
+##0.1 setup the logfile
+logger <- create.logger()
+logfile(logger) <- 'serverData.log'
+level(logger) <- 'INFO'
+
+#0.2 loading local libraries
 source("train.R")
 source("allocator.R")
 source_python("gcpSync.py")
 
+#0.3 remote storage
 bucket = 'robyn-test-data'
 local_model_file = 'Model.RData'
 remote_model_file = 'data/Model.RData'
+info(logger, glue('Remote storage set to {bucket}/{remote_model_file}'))
+info(logger, glue('Prod set t {prod}'))
 
 if(prod == FALSE){
   storage_client = storage_client_with_creds('./credentials/robyn-test-337911-f105d6e3daf1.json')
+  info(logger, glue('Using json file as credentials'))
 } else {
+  #TODO install the libraries and environment as part as the dockerfile
   virtualenv_create("r-reticulate")
   virtualenv_exists("r-reticulate")
   use_virtualenv("r-reticulate", required = TRUE)
@@ -31,15 +45,11 @@ if(prod == FALSE){
   py_install("google-cloud-storage", pip = TRUE)
   py_config()
   storage_client = storage_client_without_creds()
+  info(logger, glue('Using default credentials'))
 }
 
 
-#setup the logfile ----
-logger <- create.logger()
-logfile(logger) <- 'serverData.log'
-level(logger) <- 'INFO'
-
-# Main login screen ----
+#1 LOGIN SCREEN ----
 loginpage <- div(id = "loginpage", style = "width: 500px; max-width: 100%; margin: 0 auto; padding: 20px;",
                  wellPanel(
                    tags$h2("LOG IN", class = "text-center", style = "padding-top: 0;color:#333; font-weight:600;"),
@@ -65,6 +75,7 @@ loginpage <- div(id = "loginpage", style = "width: 500px; max-width: 100%; margi
                    ))
 )
 
+#TODO create remote backend table for login credentials
 credentials = data.frame(
   username_id = c("admin", "user"),
   passod   = sapply(c("55admin", "55user"),password_store),
@@ -72,18 +83,19 @@ credentials = data.frame(
   stringsAsFactors = F
 )
 
-header <- dashboardHeader( title = "55 | Marketing Mix Modeling", titleWidth = 300, uiOutput("logoutbtn"))
-
+#2 UI ----
+header <- dashboardHeader( title = "55 | MMM optimizer", uiOutput("logoutbtn"))
 sidebar <- dashboardSidebar(uiOutput("sidebarpanel")) 
-body <- dashboardBody(shinyjs::useShinyjs(), uiOutput("body"))
-ui<-dashboardPage(header, sidebar, body, skin = "black")
+body <- dashboardBody(shinyDashboardThemes(theme = "grey_dark"), shinyjs::useShinyjs(), uiOutput("body"))
+loader <- (options(spinner.color="#0dc5c1", spinner.type  = 7))
+ui<-dashboardPage(header, sidebar, body, loader)
 
-#server ----
+#3 SERVER ----
 server <- function(input, output, session) {
-  
   login = FALSE
   USER <- reactiveValues(login = login)
   
+#3.1 loggin logic ----  
   observe({ 
     if (USER$login == FALSE) {
       if (!is.null(input$login)) {
@@ -95,6 +107,7 @@ server <- function(input, output, session) {
             pasverify <- password_verify(pasmatch, Password)
             if(pasverify) {
               USER$login <- TRUE
+              info(logger, glue('User {Username} logged in'))
             } else {
               shinyjs::toggle(id = "nomatch", anim = TRUE, time = 1, animType = "fade")
               shinyjs::delay(3000, shinyjs::toggle(id = "nomatch", anim = TRUE, time = 1, animType = "fade"))
@@ -107,7 +120,8 @@ server <- function(input, output, session) {
       }
     }    
   })
-  
+
+#3.2 reactive UI elements ----    
   output$logoutbtn <- renderUI({
     req(USER$login)
     tags$li(a(icon("fa fa-sign-out"), "Logout", 
@@ -117,6 +131,7 @@ server <- function(input, output, session) {
                     font-weight: bold; margin:5px; padding: 10px;")
   })
   
+#3.2.1 sidebar 
   output$sidebarpanel <- renderUI({
     if (USER$login == TRUE ){ 
       if (credentials[,"permission"][which(credentials$username_id==input$userName)]=="admin") {
@@ -140,7 +155,8 @@ server <- function(input, output, session) {
       }
     }
   })
-  
+
+#3.2.1 body  
   output$body <- renderUI({
     if (USER$login == TRUE ) {
       if (credentials[,"permission"][which(credentials$username_id==input$userName)]=="admin") {
@@ -151,7 +167,7 @@ server <- function(input, output, session) {
             fluidRow(
               column(width = 9,
                 box(width = NULL, plotOutput('modelPareto')),
-                box(width = NULL, dataTableOutput('modelTable'))
+                box(width = NULL, verbatimTextOutput('modelIds'))
               ),
               column(width = 3,
                 box(width = NULL, status = "info",
@@ -172,48 +188,66 @@ server <- function(input, output, session) {
                 box(width = NULL, status = "info",
                   title = "Controls",
                   actionButton("importModelButton", "Import Existing Models"),
-                  uiOutput('modelSolutions')
-              ))
+                  uiOutput('modelSolutions'),
+                  uiOutput('modelSelection')
+                  
+              ),
+              box(width = NULL, status = "info",
+                  title = "Info",
+                  verbatimTextOutput('saveMessage')
+              )
+              )
             )
           ),
           #budget optimizer ----
           tabItem(tabName ="optimizer", class = "active",
             fluidRow(
               column(width = 9,
-                 plotOutput("p12"),
-                 plotOutput("p13"),
-                 plotOutput("p14"),
+                 tabBox(
+                   width = NULL,
+                   tabPanel("Spend Response Curve", withSpinner(plotOutput("p14"))),
+                 ),    
+
+                 tabBox(
+                   width = NULL,
+                   tabPanel("Otimized Response",withSpinner(plotOutput("p12"))),
+                   tabPanel("Optimized budget allocation",withSpinner(plotOutput("p13"))),
+                 ),
               ),
+
               column(width = 3,
-              box(width = NULL, status = "info",
-                title = "Controls",
-                actionButton("importModelButtonUser", "Import Existing Models"),
-                uiOutput('SelectedModel'),
-                selectInput( "scenario", "Choose a scenario:",
-                  c(
-                    "Max historical response" = "max_historical_response",
-                    "Max response expected spend" = "max_response_expected_spend"
-                  )
+                box(width = NULL, status = "warning",
+                  title = "Scenario",
+                  uiOutput('SelectedModel'),
+                  selectInput( "scenario", "Choose a scenario:",
+                    c(
+                      "Max historical response" = "max_historical_response",
+                      "Max response expected spend" = "max_response_expected_spend"
+                    )
+                  ),
+                  conditionalPanel(condition = "input.scenario == 'max_response_expected_spend'",
+                    numericInput("expected_spend", "Expected Spend", 0),
+                    numericInput("expected_spend_days", "Expected Spend Days", 0)
+                  ),
+                  actionButton("optimizeButton", "Apply The Changes")
                 ),
-                conditionalPanel(condition = "input.scenario == 'max_response_expected_spend'",
-                  numericInput("expected_spend", "Expected Spend", 0),
-                  numericInput("expected_spend_days", "Expected Spend Days", 0)
-                ),
-                uiOutput('channelConstr'),
-                actionButton("optimizeButton", "Optimize Budget")
-                         
-              ))
+                box(width = NULL, status = "info", solidHeader = TRUE,
+                    title = "Channel Constraints",
+                    uiOutput('channelConstr')
+                )
+              )
             )
           ),
           #logs ----
           tabItem(tabName ="logs", class = "active",
             fluidRow(
               column(width = 9,
-               box(width = NULL, status = "info", title = "Training Logs",tableOutput('logs'))
+               box(width = NULL, status = "info", title = "Training Logs",dataTableOutput('logs'))
               ),
               column(width = 3,
                      box(width = NULL, status = "info",
                          title = "Controls",
+                         actionButton("RefreshLogs", "Refresh"),
                          actionButton("resetLogs", "Reset Logs")
                      ))
             )
@@ -235,101 +269,113 @@ server <- function(input, output, session) {
       loginpage
     }
   })
-  
-  output$results <-  DT::renderDataTable({
-    datatable(iris, options = list(autoWidth = TRUE,
-                                   searching = FALSE))
-  })
-  
-  output$results2 <-  DT::renderDataTable({
-    datatable(mtcars, options = list(autoWidth = TRUE,
-                                     searching = FALSE))
-  })
-  
-#train model ----
-  observeEvent(input$trainButton, {
 
+#3.3 Processing logic ----  
+#3.3.1 train model ----
+  observeEvent(input$trainButton, {
     show_modal_spinner(
       "circle",
       text = "Please Wait, this might take a few minutes ...",
       color = "#2C2C2C"
     )
+    info(logger, glue('Training model: {input$iterations} iterations,  {input$trials} trials'))
     Model <- train(input$iterations, input$trials)
+    #save the model object localy
+    save(Model, file = "Model.RData")
     output$modelPareto <- renderPlot(Model$OutputCollect$UI$pParFront)
-    output$modelTable <- renderDataTable(Model$OutputCollect$xDecompAgg$solID)
+    output$modelIds <- renderText(Model$OutputCollect$xDecompAgg$solID)
     #save the model to gcs
     info(logger, upload_blob(storage_client, bucket, local_model_file, remote_model_file))
     remove_modal_spinner()
-    output$logs <- renderTable({read.delim('serverData.log',header=FALSE)})
-
   })
   
-#import model ----
+#3.3.2 import model ----
   observeEvent(input$importModelButton, {
     exists <- blob_exists(storage_client, bucket, remote_model_file)
+    info(logger, glue('Checking if remote file exists in {bucket}: {exists}'))
     if (exists) {
-      info(logger, 'Model file was retrieved successfully from GCS bucket')
       #download the model
       info(logger, download_blob(storage_client, bucket, remote_model_file, local_model_file))
       load(local_model_file)
-      output$modelSolutions <- renderUI({selectInput("modelSolution","Select Model", Model$OutputCollect$allSolutions)})
-    }else{
-      info(logger, 'Model file was not found GCS bucket')
-    }
-    #output the log file
-    output$logs <- renderTable({read.delim('serverData.log',header=FALSE)})
-  })
-  
-#budget optimizer ----
-  observeEvent(input$importModelButtonUser, {
-    exists <- blob_exists(storage_client, bucket, remote_model_file)
-    if (exists) {
-      info(logger, 'Model file was retrieved successfully from GCS bucket')
-      #download the model
-      info(logger, download_blob(storage_client, bucket, remote_model_file, local_model_file))
-      load(local_model_file)
-      output$SelectedModel <- renderUI({selectInput("selectedModelUser","Select Model", Model$OutputCollect$allSolutions)})
-      #scalable channel constraint selectors
-      output$channelConstr <- renderUI({
-        lapply(Model$InputCollect$paid_media_vars, 
-               function(i){sliderInput(
-                 inputId = paste0("constr_", i), i, 0.01, 2, value = c(0.7, 1.5), step = 0.1)
-               }
-        )
+      output$modelSolutions <- renderUI({selectInput("model_id","Select Model", Model$OutputCollect$allSolutions)})
+      output$modelSelection <- renderUI({actionButton("selectModelButton", "Choose this models")})
+      
+      #once the model is selected, save the selected id to the model object
+      observeEvent(input$selectModelButton, {
+        Model$model_id <- input$model_id
+        info(logger, glue("Model selected: {Model$model_id}"))
+        save(Model, file = "Model.RData")
+        #save the model object to GCS
+        info(logger, upload_blob(storage_client, bucket, local_model_file, remote_model_file))
+        output$saveMessage <- renderText(glue('Model {Model$model_id} was saved to GCS'))
+        
       })
     }else{
-      info(logger, 'Model file was not found GCS bucket')
+      print('Model was not found in remote storage')
     }
-    #output the log file
-    output$logs <- renderTable({read.delim('serverData.log',header=FALSE)})
   })
 
-  observeEvent(input$optimizeButton, {
+  
+  
+#3.3.3 budget optimizer ----
+  print("trying to load existing model from GCS")
+  exists <- blob_exists(storage_client, bucket, remote_model_file)
+  if (exists) {
+    #download the model
+    info(logger, download_blob(storage_client, bucket, remote_model_file, local_model_file))
     load(local_model_file)
-    channel_consrt_low_val <- unlist(lapply(Model$InputCollect$paid_media_vars, function(i){input[[paste0("constr_", i)]][1]}))
-    channel_consrt_up_val <- unlist(lapply(Model$InputCollect$paid_media_vars, function(i){input[[paste0("constr_", i)]][2]}))
-    AllocatorCollect <- allocate(Model$robyn_object, 
-                                 Model$InputCollect, 
-                                 Model$OutputCollect, 
-                                 input$selectedModelUser, 
-                                 input$scenario,
-                                 channel_constr_low = channel_consrt_low_val,
-                                 channel_constr_up = channel_consrt_up_val,
-                                 expected_spend=input$expected_spend,
-                                 expected_spend_days=input$expected_spend_days
-                               )
-    output$p12 <- renderPlot({AllocatorCollect$ui$p12})
-    output$p13 <- renderPlot({AllocatorCollect$ui$p13})
-    output$p14 <- renderPlot({AllocatorCollect$ui$p14})
+    #scalable channel constraint selectors
+    output$channelConstr <- renderUI({
+      lapply(Model$InputCollect$paid_media_vars, 
+             function(i){sliderInput(
+               inputId = paste0("constr_", i), i, 0.01, 2, value = c(0.7, 1.5), step = 0.1)
+             }
+      )
+    })
+    #if a model has already been selected
+    if (!is.null(Model$model_id)){
+      
+      #TODO print an initial optimizer plot output based on default parameters at the entry to the page
+
+      observeEvent(input$optimizeButton,{
+        channel_consrt_low_val <- lapply(Model$InputCollect$paid_media_vars, function(i){input[[paste0("constr_", i)]][1]})
+        channel_consrt_up_val <- lapply(Model$InputCollect$paid_media_vars, function(i){input[[paste0("constr_", i)]][2]})
+        #run the allocator (reactive so that the loading effect takes place as soon as it is refreshed)
+        AllocatorCollect <- reactive({allocate(Model$InputCollect, 
+                                               Model$OutputCollect, 
+                                               Model$model_id, 
+                                               scenario = input$scenario,
+                                               channel_constr_low = unlist(channel_consrt_low_val), 
+                                               channel_constr_up = unlist(channel_consrt_up_val),
+                                               expected_spend = input$expected_spend,
+                                               expected_spend_days = input$expected_spend_days
+        )})
+        output$p12 <- renderPlot({AllocatorCollect()$ui$p12})
+        output$p13 <- renderPlot({AllocatorCollect()$ui$p13})
+        output$p14 <- renderPlot({AllocatorCollect()$ui$p14})
+
+      })
+
+    }else{
+      print('Model does not contain a selected model_id')
+    }
+  }else{
+    print('Model was not found in remote storage')
+  }
+  
+#log file ----
+  #3.2.2 reactive logs
+  observeEvent(input$RefreshLogs, {
+    logdata <- read.delim('serverData.log',header=FALSE)
+    output$logs <- renderDataTable({datatable(logdata)})
   })
-#reset log file ----
+  
   observeEvent(input$resetLogs, {
     file.remove('serverData.log')
     logger <- create.logger()
     logfile(logger) <- 'serverData.log'
     level(logger) <- 'INFO'
-    info(logger, 'File log resset')
-    output$logs <- renderTable({read.delim('serverData.log',header=FALSE)})
+    info(logger, 'Reset log files')
   })
 }
 
