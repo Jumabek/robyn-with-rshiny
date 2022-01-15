@@ -314,7 +314,7 @@ train <- function(iterations, trials){
   Model <- vector(mode = "list")
   Model$InputCollect <- InputCollect
   Model$OutputCollect <- OutputCollect
-  
+  Model$robyn_object <- robyn_object
   save(Model, file = "Model.RData")
   
   return(Model)

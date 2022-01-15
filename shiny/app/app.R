@@ -10,7 +10,7 @@ library(log4r)
 # set up environment ----
 prod = FALSE
 if(prod == FALSE){
-  setwd("C:/Users/Bastien/robyn/shiny/test")
+  setwd("C:/Users/Bastien/robyn/shiny/app")
 }
 
 source("train.R")
@@ -78,6 +78,7 @@ sidebar <- dashboardSidebar(uiOutput("sidebarpanel"))
 body <- dashboardBody(shinyjs::useShinyjs(), uiOutput("body"))
 ui<-dashboardPage(header, sidebar, body, skin = "black")
 
+#server ----
 server <- function(input, output, session) {
   
   login = FALSE
@@ -198,6 +199,7 @@ server <- function(input, output, session) {
                   numericInput("expected_spend", "Expected Spend", 0),
                   numericInput("expected_spend_days", "Expected Spend Days", 0)
                 ),
+                uiOutput('channelConstr'),
                 actionButton("optimizeButton", "Optimize Budget")
                          
               ))
@@ -287,15 +289,35 @@ server <- function(input, output, session) {
       info(logger, download_blob(storage_client, bucket, remote_model_file, local_model_file))
       load(local_model_file)
       output$SelectedModel <- renderUI({selectInput("selectedModelUser","Select Model", Model$OutputCollect$allSolutions)})
+      #scalable channel constraint selectors
+      output$channelConstr <- renderUI({
+        lapply(Model$InputCollect$paid_media_vars, 
+               function(i){sliderInput(
+                 inputId = paste0("constr_", i), i, 0.01, 2, value = c(0.7, 1.5), step = 0.1)
+               }
+        )
+      })
     }else{
       info(logger, 'Model file was not found GCS bucket')
     }
     #output the log file
     output$logs <- renderTable({read.delim('serverData.log',header=FALSE)})
   })
-  
+
   observeEvent(input$optimizeButton, {
-    AllocatorCollect <- allocate(Model$InputCollect, Model$OutputCollect, input$selectedModelUser, input$scenario)
+    load(local_model_file)
+    channel_consrt_low_val <- unlist(lapply(Model$InputCollect$paid_media_vars, function(i){input[[paste0("constr_", i)]][1]}))
+    channel_consrt_up_val <- unlist(lapply(Model$InputCollect$paid_media_vars, function(i){input[[paste0("constr_", i)]][2]}))
+    AllocatorCollect <- allocate(Model$robyn_object, 
+                                 Model$InputCollect, 
+                                 Model$OutputCollect, 
+                                 input$selectedModelUser, 
+                                 input$scenario,
+                                 channel_constr_low = channel_consrt_low_val,
+                                 channel_constr_up = channel_consrt_up_val,
+                                 expected_spend=input$expected_spend,
+                                 expected_spend_days=input$expected_spend_days
+                               )
     output$p12 <- renderPlot({AllocatorCollect$ui$p12})
     output$p13 <- renderPlot({AllocatorCollect$ui$p13})
     output$p14 <- renderPlot({AllocatorCollect$ui$p14})
@@ -310,7 +332,6 @@ server <- function(input, output, session) {
     output$logs <- renderTable({read.delim('serverData.log',header=FALSE)})
   })
 }
-
 
 runApp(list(ui = ui, server = server), launch.browser = TRUE, host='0.0.0.0', port=3838)
 
