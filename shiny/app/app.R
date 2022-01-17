@@ -13,7 +13,7 @@ library(shinycssloaders)
 #0 ENVIRONMENT SETUP ----
 prod = FALSE
 if(prod == FALSE){
-  setwd("C:/Users/Bastien/robyn/shiny/app")
+  setwd("C:/Users/User/robyn/shiny/app")
 }
 
 ##0.1 setup the logfile
@@ -27,14 +27,14 @@ source("allocator.R")
 source_python("gcpSync.py")
 
 #0.3 remote storage
-bucket = 'robyn-test-data'
+bucket = 'robyn-test-bucket'
 local_model_file = 'Model.RData'
 remote_model_file = 'data/Model.RData'
 info(logger, glue('Remote storage set to {bucket}/{remote_model_file}'))
 info(logger, glue('Prod set t {prod}'))
 
 if(prod == FALSE){
-  storage_client = storage_client_with_creds('./credentials/robyn-test-337911-f105d6e3daf1.json')
+  storage_client = storage_client_with_creds('./credentials/robyn-test-2-39af70f75b69.json')
   info(logger, glue('Using json file as credentials'))
 } else {
   #TODO install the libraries and environment as part as the dockerfile
@@ -139,7 +139,7 @@ server <- function(input, output, session) {
         sidebarMenu(
           menuItem("Model Training", tabName = "training", icon = icon("flash")),
           menuItem("Model Selection", tabName = "selection", icon = icon("search")),
-          menuItem("Budget Optimizer", tabName = "optimizer", icon = icon("dashboard")),
+          menuItem("Budget Optimizer", tabName = "optimizer", icon = icon("dashboard"), selected = T),
           menuItem("Documentation", tabName = "documentation", icon = icon("book")),
           menuItem("Logs", tabName = "logs", icon = icon("list"))
         )
@@ -148,7 +148,7 @@ server <- function(input, output, session) {
       else{
         #user pannel ----
         sidebarMenu(
-          menuItem("Budget Optimizer", tabName = "optimizer", icon = icon("dashboard")),
+          menuItem("Budget Optimizer", tabName = "optimizer", icon = icon("dashboard"), selected = T),
           menuItem("Documentation", tabName = "documentation", icon = icon("book"))
         )
         
@@ -163,7 +163,7 @@ server <- function(input, output, session) {
         #admin body ----
         tabItems(
           #model training ----
-          tabItem(tabName ="training", class = "active",
+          tabItem(tabName ="training",
             fluidRow(
               column(width = 9,
                 box(width = NULL, plotOutput('modelPareto')),
@@ -180,7 +180,7 @@ server <- function(input, output, session) {
             )
           ),
           #model selection ----
-          tabItem(tabName ="selection", class = "active",
+          tabItem(tabName ="selection",
             fluidRow(
               column(width = 9
               ),
@@ -239,7 +239,7 @@ server <- function(input, output, session) {
             )
           ),
           #logs ----
-          tabItem(tabName ="logs", class = "active",
+          tabItem(tabName ="logs",
             fluidRow(
               column(width = 9,
                box(width = NULL, status = "info", title = "Training Logs",dataTableOutput('logs'))
@@ -335,20 +335,34 @@ server <- function(input, output, session) {
     #if a model has already been selected
     if (!is.null(Model$model_id)){
       
-      #TODO print an initial optimizer plot output based on default parameters at the entry to the page
+      #dry run of the allocator
+      AllocatorCollect <- allocate(Model$InputCollect, 
+                                             Model$OutputCollect, 
+                                             Model$model_id, 
+                                             scenario ="max_historical_response",
+                                             channel_constr_low = rep(0.7, each = length(Model$InputCollect$paid_media_vars)), 
+                                             channel_constr_up = rep(1.5, each = length(Model$InputCollect$paid_media_vars))
+      )
+      output$p12 <- renderPlot({AllocatorCollect$ui$p12})
+      output$p13 <- renderPlot({AllocatorCollect$ui$p13})
+      output$p14 <- renderPlot({AllocatorCollect$ui$p14})
 
+      #new run of the allocator
       observeEvent(input$optimizeButton,{
         channel_consrt_low_val <- lapply(Model$InputCollect$paid_media_vars, function(i){input[[paste0("constr_", i)]][1]})
         channel_consrt_up_val <- lapply(Model$InputCollect$paid_media_vars, function(i){input[[paste0("constr_", i)]][2]})
+        scenario <- input$scenario
+        expected_spend <- input$expected_spend
+        expected_spend_days <- input$expected_spend_days
         #run the allocator (reactive so that the loading effect takes place as soon as it is refreshed)
         AllocatorCollect <- reactive({allocate(Model$InputCollect, 
                                                Model$OutputCollect, 
                                                Model$model_id, 
-                                               scenario = input$scenario,
+                                               scenario = scenario,
                                                channel_constr_low = unlist(channel_consrt_low_val), 
                                                channel_constr_up = unlist(channel_consrt_up_val),
-                                               expected_spend = input$expected_spend,
-                                               expected_spend_days = input$expected_spend_days
+                                               expected_spend = expected_spend,
+                                               expected_spend_days = expected_spend_days
         )})
         output$p12 <- renderPlot({AllocatorCollect()$ui$p12})
         output$p13 <- renderPlot({AllocatorCollect()$ui$p13})
