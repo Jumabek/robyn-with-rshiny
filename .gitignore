@@ -45,8 +45,8 @@ output/
 python/virtualenv
 
 #credentials
-shiny/test/credentials/
-shiny/app/credentials/
-credentials/
+shiny/test/credentials/*
+shiny/app/credentials/*
+credentials/*
 #virtual environment
 /venv

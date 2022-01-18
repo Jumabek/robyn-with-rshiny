@@ -21,7 +21,7 @@ library(glue)
 
 #set.seed(123)
 
-train <- function(iterations, trials){
+Train <- function(iterations, trials){
   ## Must install the python library Nevergrad once
   ## ATTENTION: The latest Python 3.10 version will cause Nevergrad installation error
   ## See here for more info about installing Python packages via reticulate
@@ -298,6 +298,7 @@ train <- function(iterations, trials){
     
     InputCollect = InputCollect # feed in all model specification
     , plot_folder = output_dir # plots will be saved in the same folder as robyn_object
+    , plot_folder_sub = "out"
     , pareto_fronts = 1
     , plot_pareto = FALSE
     # , calibration_constraint = 0.1 # run ?robyn_run to see description

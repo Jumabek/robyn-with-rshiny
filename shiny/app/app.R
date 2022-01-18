@@ -14,7 +14,7 @@ library(plotly)
 #0 ENVIRONMENT SETUP ----
 prod = FALSE
 if(prod == FALSE){
-  setwd("C:/Users/User/robyn/shiny/app")
+  setwd("C:/Users/Bastien/robyn/shiny/app")
 }
 
 ##0.1 setup the logfile
@@ -36,7 +36,7 @@ info(logger, glue('Remote storage set to {bucket}/{remote_model_file}'))
 info(logger, glue('Prod set to {prod}'))
 
 if(prod == FALSE){
-  storage_client = storage_client_with_creds('./credentials/robyn-test-2-39af70f75b69.json')
+  storage_client = storage_client_with_creds('./credentials/robyn-test-2-672df5a3c62a.json')
   info(logger, glue('Using json file as credentials'))
 } else {
   #TODO install the libraries and environment as part as the dockerfile
@@ -54,13 +54,13 @@ if(prod == FALSE){
 #1 LOGIN SCREEN ----
 loginpage <- div(id = "loginpage", style = "width: 500px; max-width: 100%; margin: 0 auto; padding: 20px;",
                  wellPanel(
-                   tags$h2("LOG IN", class = "text-center", style = "padding-top: 0;color:#333; font-weight:600;"),
+                   tags$h2("Log In", class = "text-center", style = "padding-top: 0;color:#333; font-weight:600;"),
                    textInput("userName", placeholder="Username", label = tagList(icon("user"), "Username")),
                    passwordInput("passwd", placeholder="Password", label = tagList(icon("unlock-alt"), "Password")),
                    br(),
                    div(
                      style = "text-align: center;",
-                     actionButton("login", "SIGN IN", style = "color: white; background-color:#3c8dbc;
+                     actionButton("login", "Sign In", style = "color: white; background-color:#3c8dbc;
                                  padding: 10px 15px; width: 150px; cursor: pointer;
                                  font-size: 18px; font-weight: 600;"),
                      shinyjs::hidden(
@@ -86,9 +86,9 @@ credentials = data.frame(
 )
 
 #2 UI ----
-header <- dashboardHeader( title = "55 | MMM optimizer", uiOutput("logoutbtn"))
+header <- dashboardHeader( title = "55 | Marketing Mix Modeling", titleWidth = 300, uiOutput("logoutbtn"))
 sidebar <- dashboardSidebar(uiOutput("sidebarpanel")) 
-body <- dashboardBody(shinyDashboardThemes(theme = "grey_light"), shinyjs::useShinyjs(), uiOutput("body"))
+body <- dashboardBody(shinyDashboardThemes(theme = "grey_dark"), shinyjs::useShinyjs(), uiOutput("body"))
 loader <- (options(spinner.color="#0dc5c1", spinner.type  = 7))
 ui<-dashboardPage(header, sidebar, body, loader)
 
@@ -141,7 +141,8 @@ server <- function(input, output, session) {
         sidebarMenu(
           menuItem("Model Training", tabName = "training", icon = icon("flash")),
           menuItem("Model Selection", tabName = "selection", icon = icon("search")),
-          menuItem("Budget Optimizer", tabName = "optimizer", icon = icon("dashboard"), selected = T),
+          menuItem("Historical Contribution", tabName = "historic", icon = icon("signal")),
+          menuItem("Budget Optimization", tabName = "optimizer", icon = icon("dashboard"), selected = T),
           menuItem("Documentation", tabName = "documentation", icon = icon("book")),
           menuItem("Logs", tabName = "logs", icon = icon("list"))
         )
@@ -150,6 +151,7 @@ server <- function(input, output, session) {
       else{
         #user pannel ----
         sidebarMenu(
+          menuItem("Historical Contribution", tabName = "historic", icon = icon("signal")),
           menuItem("Budget Optimizer", tabName = "optimizer", icon = icon("dashboard"), selected = T),
           menuItem("Documentation", tabName = "documentation", icon = icon("book"))
         )
@@ -169,7 +171,7 @@ server <- function(input, output, session) {
             fluidRow(
               column(width = 9,
                 box(width = NULL, status = "warning", h3('Model Training')),
-                box(title = "Model Pareto", width = NULL, plotOutput('modelPareto')),
+                box(title = "Model Pareto", width = NULL, plotlyOutput('modelPareto')),
                 box(title = "Model IDs", width = NULL, verbatimTextOutput('modelIds'))
               ),
               column(width = 3,
@@ -202,19 +204,33 @@ server <- function(input, output, session) {
               )
             )
           ),
+          #historical driver contribution ----
+          tabItem(tabName ="historic",
+                  fluidRow(
+                    column(width = 9,
+                           box(
+                             width = NULL, title = "Title", 
+                             withSpinner(plotlyOutput('return_per_channel')),
+                           )   
+                    ),
+                    column(width = 3,
+                           uiOutput('dateSelector')
+                    )
+                  )
+          ),
           #budget optimizer ----
           tabItem(tabName ="optimizer", class = "active",
             fluidRow(
               column(width = 9,
                  box(
                    width = NULL, title = "Title", 
-                   withSpinner(plotOutput("p14")),
+                   withSpinner(plotlyOutput("p14")),
                  ),    
 
                  tabBox(
                    width = NULL,
                    tabPanel("Otimized Response",withSpinner(plotlyOutput("p12"))),
-                   tabPanel("Optimized budget allocation",withSpinner(plotOutput("p13"))),
+                   tabPanel("Optimized budget allocation",withSpinner(plotlyOutput("p13"))),
                  ),
               ),
 
@@ -222,6 +238,7 @@ server <- function(input, output, session) {
                 box(width = NULL, status = "warning",
                   title = "Scenario",
                   uiOutput('SelectedModel'),
+                  "Selected marketing allocation scenario",
                   selectInput( "scenario", "Choose a scenario:",
                     c(
                       "Max historical response" = "max_historical_response",
@@ -231,12 +248,17 @@ server <- function(input, output, session) {
                   conditionalPanel(condition = "input.scenario == 'max_response_expected_spend'",
                     numericInput("expected_spend", "Expected Spend", 0),
                     numericInput("expected_spend_days", "Expected Spend Days", 0)
-                  ),
-                  actionButton("optimizeButton", "Apply The Changes")
+                  )
                 ),
                 box(width = NULL, status = "warning", solidHeader = TRUE,
                     title = "Channel Constraints",
+                    "Range of budget multiplier based on historical allocation",
                     uiOutput('channelConstr')
+                ),
+                box(width = NULL, status = "warning", solidHeader = TRUE,
+                    title = "Optimization",
+                    "Integration of the parameters within the allocation optimization",
+                    actionButton("optimizeButton", "Refresh Budget Allocation")
                 )
               )
             )
@@ -282,10 +304,10 @@ server <- function(input, output, session) {
       color = "#2C2C2C"
     )
     info(logger, glue('Training model: {input$iterations} iterations,  {input$trials} trials'))
-    Model <- train(input$iterations, input$trials)
+    Model <- Train(input$iterations, input$trials)
     #save the model object localy
     save(Model, file = "Model.RData")
-    output$modelPareto <- renderPlot(Model$OutputCollect$UI$pParFront)
+    output$modelPareto <- renderPlotly(ggplotly(Model$OutputCollect$UI$pParFront))
     output$modelIds <- renderText(Model$OutputCollect$xDecompAgg$solID)
     #save the model to gcs
     info(logger, upload_blob(storage_client, bucket, local_model_file, remote_model_file))
@@ -338,17 +360,34 @@ server <- function(input, output, session) {
     #if a model has already been selected
     if (!is.null(Model$model_id)){
       
+      #retrieve the date range selected by the model 
+      output$dateSelector <- renderUI({
+        box(width = NULL, status = "warning",
+            title = "Date range",
+            dateInput("startDate", label = "Start Date",
+                      min = Model$InputCollect$window_start,
+                      max = Model$InputCollect$window_end,
+                      value = Model$InputCollect$window_start),
+            
+            dateInput("endDate", label = "End Date", 
+                      min = Model$InputCollect$window_start,
+                      max = Model$InputCollect$window_end,
+                      value = Model$InputCollect$window_end)
+        )
+      })
+      output$return_per_channel <- renderPlotly({PlotGraph(Model, input$startDate, input$endDate)$return_per_channel})
+      
       #dry run of the allocator
-      AllocatorCollect <- allocate(Model$InputCollect, 
-                                             Model$OutputCollect, 
-                                             Model$model_id, 
-                                             scenario ="max_historical_response",
-                                             channel_constr_low = rep(0.7, each = length(Model$InputCollect$paid_media_vars)), 
-                                             channel_constr_up = rep(1.5, each = length(Model$InputCollect$paid_media_vars))
+      AllocatorCollect <- Allocate(InputCollect = Model$InputCollect, 
+                                   OutputCollect= Model$OutputCollect, 
+                                   select_model = Model$model_id, 
+                                   scenario ="max_historical_response",
+                                   channel_constr_low = rep(0.7, each = length(Model$InputCollect$paid_media_vars)), 
+                                   channel_constr_up = rep(1.5, each = length(Model$InputCollect$paid_media_vars))
       )
       output$p12 <- renderPlotly({ggplotly(AllocatorCollect$ui$p12)})
-      output$p13 <- renderPlot({AllocatorCollect$ui$p13})
-      output$p14 <- renderPlot({AllocatorCollect$ui$p14})
+      output$p13 <- renderPlotly({ggplotly(AllocatorCollect$ui$p13)})
+      output$p14 <- renderPlotly({ggplotly(AllocatorCollect$ui$p14)})
 
       #new run of the allocator
       observeEvent(input$optimizeButton,{
@@ -358,7 +397,7 @@ server <- function(input, output, session) {
         expected_spend <- input$expected_spend
         expected_spend_days <- input$expected_spend_days
         #run the allocator (reactive so that the loading effect takes place as soon as it is refreshed)
-        AllocatorCollect <- reactive({allocate(Model$InputCollect, 
+        AllocatorCollect <- reactive({Allocate(Model$InputCollect, 
                                                Model$OutputCollect, 
                                                Model$model_id, 
                                                scenario = scenario,
@@ -368,9 +407,9 @@ server <- function(input, output, session) {
                                                expected_spend_days = expected_spend_days
         )})
         
-        output$p12 <- renderPlot({AllocatorCollect()$ui$p12})
-        output$p13 <- renderPlot({AllocatorCollect()$ui$p13})
-        output$p14 <- renderPlot({AllocatorCollect()$ui$p14})
+        output$p12 <- renderPlotly({ggplotly(AllocatorCollect()$ui$p12)})
+        output$p13 <- renderPlotly({ggplotly(AllocatorCollect()$ui$p13)})
+        output$p14 <- renderPlotly({ggplotly(AllocatorCollect()$ui$p14)})
 
       })
 

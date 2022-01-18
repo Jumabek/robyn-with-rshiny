@@ -1,6 +1,6 @@
 library(Robyn)
 
-allocate <- function(InputCollect, 
+Allocate <- function(InputCollect, 
                      OutputCollect, 
                      select_model, 
                      scenario, 
@@ -42,3 +42,4 @@ allocate <- function(InputCollect,
   # View allocator result. Last column "optmResponseUnitTotalLift" is the total response lift.
   #AllocatorCollect$dt_optimOut
 }
+
