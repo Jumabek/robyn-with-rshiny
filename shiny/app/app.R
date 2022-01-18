@@ -9,6 +9,7 @@ library(log4r)
 library(glue)
 library(dashboardthemes)
 library(shinycssloaders)
+library(plotly)
 
 #0 ENVIRONMENT SETUP ----
 prod = FALSE
@@ -24,6 +25,7 @@ level(logger) <- 'INFO'
 #0.2 loading local libraries
 source("train.R")
 source("allocator.R")
+source("plot.R")
 source_python("gcpSync.py")
 
 #0.3 remote storage
@@ -31,7 +33,7 @@ bucket = 'robyn-test-bucket'
 local_model_file = 'Model.RData'
 remote_model_file = 'data/Model.RData'
 info(logger, glue('Remote storage set to {bucket}/{remote_model_file}'))
-info(logger, glue('Prod set t {prod}'))
+info(logger, glue('Prod set to {prod}'))
 
 if(prod == FALSE){
   storage_client = storage_client_with_creds('./credentials/robyn-test-2-39af70f75b69.json')
@@ -86,7 +88,7 @@ credentials = data.frame(
 #2 UI ----
 header <- dashboardHeader( title = "55 | MMM optimizer", uiOutput("logoutbtn"))
 sidebar <- dashboardSidebar(uiOutput("sidebarpanel")) 
-body <- dashboardBody(shinyDashboardThemes(theme = "grey_dark"), shinyjs::useShinyjs(), uiOutput("body"))
+body <- dashboardBody(shinyDashboardThemes(theme = "grey_light"), shinyjs::useShinyjs(), uiOutput("body"))
 loader <- (options(spinner.color="#0dc5c1", spinner.type  = 7))
 ui<-dashboardPage(header, sidebar, body, loader)
 
@@ -166,11 +168,12 @@ server <- function(input, output, session) {
           tabItem(tabName ="training",
             fluidRow(
               column(width = 9,
-                box(width = NULL, plotOutput('modelPareto')),
-                box(width = NULL, verbatimTextOutput('modelIds'))
+                box(width = NULL, status = "warning", h3('Model Training')),
+                box(title = "Model Pareto", width = NULL, plotOutput('modelPareto')),
+                box(title = "Model IDs", width = NULL, verbatimTextOutput('modelIds'))
               ),
               column(width = 3,
-                box(width = NULL, status = "info",
+                box(width = NULL, status = "warning",
                   title = "Controls", 
                   sliderInput("iterations", "Number of Iterations:", 100, 2000, 100),
                   sliderInput("trials", "Number of Trials:", 1, 10, 1),
@@ -185,14 +188,14 @@ server <- function(input, output, session) {
               column(width = 9
               ),
               column(width = 3,
-                box(width = NULL, status = "info",
+                box(width = NULL, status = "warning",
                   title = "Controls",
                   actionButton("importModelButton", "Import Existing Models"),
                   uiOutput('modelSolutions'),
                   uiOutput('modelSelection')
                   
               ),
-              box(width = NULL, status = "info",
+              box(width = NULL, status = "warning",
                   title = "Info",
                   verbatimTextOutput('saveMessage')
               )
@@ -203,14 +206,14 @@ server <- function(input, output, session) {
           tabItem(tabName ="optimizer", class = "active",
             fluidRow(
               column(width = 9,
-                 tabBox(
-                   width = NULL,
-                   tabPanel("Spend Response Curve", withSpinner(plotOutput("p14"))),
+                 box(
+                   width = NULL, title = "Title", 
+                   withSpinner(plotOutput("p14")),
                  ),    
 
                  tabBox(
                    width = NULL,
-                   tabPanel("Otimized Response",withSpinner(plotOutput("p12"))),
+                   tabPanel("Otimized Response",withSpinner(plotlyOutput("p12"))),
                    tabPanel("Optimized budget allocation",withSpinner(plotOutput("p13"))),
                  ),
               ),
@@ -231,7 +234,7 @@ server <- function(input, output, session) {
                   ),
                   actionButton("optimizeButton", "Apply The Changes")
                 ),
-                box(width = NULL, status = "info", solidHeader = TRUE,
+                box(width = NULL, status = "warning", solidHeader = TRUE,
                     title = "Channel Constraints",
                     uiOutput('channelConstr')
                 )
@@ -343,7 +346,7 @@ server <- function(input, output, session) {
                                              channel_constr_low = rep(0.7, each = length(Model$InputCollect$paid_media_vars)), 
                                              channel_constr_up = rep(1.5, each = length(Model$InputCollect$paid_media_vars))
       )
-      output$p12 <- renderPlot({AllocatorCollect$ui$p12})
+      output$p12 <- renderPlotly({ggplotly(AllocatorCollect$ui$p12)})
       output$p13 <- renderPlot({AllocatorCollect$ui$p13})
       output$p14 <- renderPlot({AllocatorCollect$ui$p14})
 
@@ -364,6 +367,7 @@ server <- function(input, output, session) {
                                                expected_spend = expected_spend,
                                                expected_spend_days = expected_spend_days
         )})
+        
         output$p12 <- renderPlot({AllocatorCollect()$ui$p12})
         output$p13 <- renderPlot({AllocatorCollect()$ui$p13})
         output$p14 <- renderPlot({AllocatorCollect()$ui$p14})

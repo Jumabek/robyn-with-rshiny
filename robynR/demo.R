@@ -299,14 +299,12 @@ InputCollect <- robyn_inputs(InputCollect = InputCollect, hyperparameters = hype
 
 # Run ?robyn_run to check parameter definition
 OutputCollect <- robyn_run(
-
   InputCollect = InputCollect # feed in all model specification
-  , plot_folder = output_dir # plots will be saved in the same folder as robyn_object
-  , pareto_fronts = 1
-  , plot_pareto = FALSE
+  , plot_folder = robyn_object # plots will be saved in the same folder as robyn_object
+  , pareto_fronts = 3
+  , plot_pareto = TRUE
   # , calibration_constraint = 0.1 # run ?robyn_run to see description
   # , lambda_control = 1 # run ?robyn_run to see description
-  ,ui=TRUE
 )
 
 ## Besides one-pager plots: there are 4 csv output saved in the folder for further usage

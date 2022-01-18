@@ -13,6 +13,7 @@ install.packages("log4r")
 install.packages("shinydashboard")
 install.packages("dashboardthemes")
 install.packages("shinycssloaders")
+install.packages("plotly")
 
 
 remotes::install_github("facebookexperimental/Robyn/R")
