@@ -141,7 +141,8 @@ server <- function(input, output, session) {
         sidebarMenu(
           menuItem("Model Training", tabName = "training", icon = icon("flash")),
           menuItem("Model Selection", tabName = "selection", icon = icon("search")),
-          menuItem("Historical Contribution", tabName = "historic", icon = icon("signal")),
+          menuItem("Historical Overview", tabName = "overview", icon = icon("signal")),
+          menuItem("Historical Contribution", tabName = "contribution", icon = icon("signal")),
           menuItem("Budget Optimization", tabName = "optimizer", icon = icon("dashboard"), selected = T),
           menuItem("Documentation", tabName = "documentation", icon = icon("book")),
           menuItem("Logs", tabName = "logs", icon = icon("list"))
@@ -151,6 +152,7 @@ server <- function(input, output, session) {
       else{
         #user pannel ----
         sidebarMenu(
+          menuItem("Historical Overview", tabName = "overview", icon = icon("signal")),
           menuItem("Historical Contribution", tabName = "historic", icon = icon("signal")),
           menuItem("Budget Optimizer", tabName = "optimizer", icon = icon("dashboard"), selected = T),
           menuItem("Documentation", tabName = "documentation", icon = icon("book"))
@@ -204,8 +206,8 @@ server <- function(input, output, session) {
               )
             )
           ),
-          #historical driver contribution ----
-          tabItem(tabName ="historic",
+          #historical spend and revenue ----
+          tabItem(tabName ="overview",
                   fluidRow(
                     column(width = 9,
                            box(
@@ -216,18 +218,28 @@ server <- function(input, output, session) {
                              width = NULL, title = "Media Spend per week", 
                              withSpinner(plotlyOutput('bar_chart_media_spend_week')),
                            ),
+                    ),
+                    column(width = 3,
+                           uiOutput('DateSelectorOverview')
+                    )
+                  )
+          ),
+          #historical driver contribution ----
+          tabItem(tabName ="contribution",
+                  fluidRow(
+                    column(width = 9,
                            box(
-                             width = 5, title = "ROI per channel", 
+                             width = NULL, title = "ROI per channel", 
                              withSpinner(plotlyOutput('channel_roi')),
                            ),
                            box(
-                             width = 5, title = "ROI per channel", 
+                             width = NULL, title = "ROI per channel", 
                              withSpinner(plotOutput('pie_chart_contribution')),
                            )
    
                     ),
                     column(width = 3,
-                           uiOutput('dateSelector')
+                           uiOutput('DateSelectorContrib')
                     )
                   )
           ),
@@ -373,29 +385,51 @@ server <- function(input, output, session) {
     #if a model has already been selected
     if (!is.null(Model$model_id)){
       
-      #retrieve the date range selected by the model 
-      output$dateSelector <- renderUI({
+      #historical overview date range
+      output$DateSelectorOverview <- renderUI({
         box(width = NULL, status = "warning",
             title = "Date range",
-            dateInput("startDate", label = "Start Date",
+            dateInput("start_date_overview", label = "Start Date",
                       min = Model$InputCollect$window_start,
                       max = Model$InputCollect$window_end,
-                      value = Model$InputCollect$window_start),
+                      value = if(Model$InputCollect$window_start != input$start_date_overview){input$start_date_overview}else{Model$InputCollect$window_start}
+                      ),
             
-            dateInput("endDate", label = "End Date", 
+            dateInput("end_date_overview", label = "End Date", 
                       min = Model$InputCollect$window_start,
                       max = Model$InputCollect$window_end,
-                      value = Model$InputCollect$window_end)
+                      value = if(Model$InputCollect$window_end != input$end_date_overview){input$end_date_overview}else{Model$InputCollect$window_end}
+                      )
         )
       })
-      #output channl ROI
-      output$channel_roi <- renderPlotly({PlotHistorical(Model, input$startDate, input$endDate)$channel_roi})
-      # outputu line chart
-      output$line_chart_rev_week <- renderPlotly({line_chart_rev_week(Model, input$startDate, input$endDate)})
-      #output bar chart media spend
-      output$bar_chart_media_spend_week <- renderPlotly({bar_chart_media_spend_week(Model, input$startDate, input$endDate)})
-      #pie chart media contribution
-      output$pie_chart_contribution <- renderPlot({pie_chart_media_contribution(Model, input$startDate, input$endDate)})
+      #revenue over time line chart
+      output$line_chart_rev_week <- renderPlotly({line_chart_rev_week(Model, input$start_date_overview, input$end_date_overview)})
+      #share media spend over time
+      output$bar_chart_media_spend_week <- renderPlotly({bar_chart_media_spend_week(Model, input$start_date_overview, input$end_date_overview)})
+      
+      #historical contribution date range
+      output$DateSelectorContrib <- renderUI({
+        box(width = NULL, status = "warning",
+            title = "Date range",
+            dateInput("start_date_contrib", label = "Start Date",
+                      min = Model$InputCollect$window_start,
+                      max = Model$InputCollect$window_end,
+                      value = if(Model$InputCollect$window_start != input$start_date_overview){input$start_date_overview}else{Model$InputCollect$window_start}
+                      ),
+            
+            dateInput("end_date_contrib", label = "End Date", 
+                      min = Model$InputCollect$window_start,
+                      max = Model$InputCollect$window_end,
+                      value = if(Model$InputCollect$window_end != input$end_date_overview){input$end_date_overview}else{Model$InputCollect$window_end}
+                      )
+        )
+      })
+      #update the inputs to match each other
+
+      #Global channel ROI
+      output$channel_roi <- renderPlotly({PlotHistorical(Model, input$start_date_contrib, input$end_date_contrib)$channel_roi})
+      #channel contribution pie chart
+      output$pie_chart_contribution <- renderPlot({pie_chart_media_contribution(Model, input$end_date_contrib, input$endDate)})
       
       #dry run of the allocator
       AllocatorCollect <- Allocate(InputCollect = Model$InputCollect, 

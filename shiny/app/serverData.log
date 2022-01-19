@@ -362,3 +362,33 @@ INFO  [2022-01-19 15:21:42] Prod set to FALSE
 INFO  [2022-01-19 15:21:42] Using json file as credentials
 INFO  [2022-01-19 15:21:50] GCS file data/Model.RData downloaded to Model.RData.
 INFO  [2022-01-19 15:21:58] User admin logged in
+INFO  [2022-01-19 16:36:13] Remote storage set to robyn-test-bucket/data/Model.RData
+INFO  [2022-01-19 16:36:13] Prod set to FALSE
+INFO  [2022-01-19 16:36:13] Using json file as credentials
+INFO  [2022-01-19 16:36:21] GCS file data/Model.RData downloaded to Model.RData.
+INFO  [2022-01-19 16:36:39] User admin logged in
+INFO  [2022-01-19 17:49:42] Remote storage set to robyn-test-bucket/data/Model.RData
+INFO  [2022-01-19 17:49:42] Prod set to FALSE
+INFO  [2022-01-19 17:49:43] Using json file as credentials
+INFO  [2022-01-19 17:49:48] GCS file data/Model.RData downloaded to Model.RData.
+INFO  [2022-01-19 17:49:58] User admin logged in
+INFO  [2022-01-19 17:51:33] Remote storage set to robyn-test-bucket/data/Model.RData
+INFO  [2022-01-19 17:51:33] Prod set to FALSE
+INFO  [2022-01-19 17:51:33] Using json file as credentials
+INFO  [2022-01-19 17:51:38] GCS file data/Model.RData downloaded to Model.RData.
+INFO  [2022-01-19 17:51:48] User admin logged in
+INFO  [2022-01-19 18:00:10] Remote storage set to robyn-test-bucket/data/Model.RData
+INFO  [2022-01-19 18:00:10] Prod set to FALSE
+INFO  [2022-01-19 18:00:10] Using json file as credentials
+INFO  [2022-01-19 18:00:19] GCS file data/Model.RData downloaded to Model.RData.
+INFO  [2022-01-19 18:00:28] User admin logged in
+INFO  [2022-01-19 18:07:34] Remote storage set to robyn-test-bucket/data/Model.RData
+INFO  [2022-01-19 18:07:34] Prod set to FALSE
+INFO  [2022-01-19 18:07:34] Using json file as credentials
+INFO  [2022-01-19 18:07:44] GCS file data/Model.RData downloaded to Model.RData.
+INFO  [2022-01-19 18:07:59] User admin logged in
+INFO  [2022-01-19 18:12:34] Remote storage set to robyn-test-bucket/data/Model.RData
+INFO  [2022-01-19 18:12:34] Prod set to FALSE
+INFO  [2022-01-19 18:12:34] Using json file as credentials
+INFO  [2022-01-19 18:12:44] GCS file data/Model.RData downloaded to Model.RData.
+INFO  [2022-01-19 18:12:53] User admin logged in
