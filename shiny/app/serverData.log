@@ -277,3 +277,88 @@ INFO  [2022-01-19 11:50:19] Prod set to FALSE
 INFO  [2022-01-19 11:50:19] Using json file as credentials
 INFO  [2022-01-19 11:50:29] GCS file data/Model.RData downloaded to Model.RData.
 INFO  [2022-01-19 11:50:38] User admin logged in
+INFO  [2022-01-19 13:56:02] Remote storage set to robyn-test-bucket/data/Model.RData
+INFO  [2022-01-19 13:56:02] Prod set to FALSE
+INFO  [2022-01-19 13:56:02] Using json file as credentials
+INFO  [2022-01-19 13:56:07] GCS file data/Model.RData downloaded to Model.RData.
+INFO  [2022-01-19 13:56:52] User admin logged in
+INFO  [2022-01-19 14:22:03] Remote storage set to robyn-test-bucket/data/Model.RData
+INFO  [2022-01-19 14:22:03] Prod set to FALSE
+INFO  [2022-01-19 14:22:03] Using json file as credentials
+INFO  [2022-01-19 14:22:10] GCS file data/Model.RData downloaded to Model.RData.
+INFO  [2022-01-19 14:22:36] User admin logged in
+INFO  [2022-01-19 14:24:18] Remote storage set to robyn-test-bucket/data/Model.RData
+INFO  [2022-01-19 14:24:18] Prod set to FALSE
+INFO  [2022-01-19 14:24:18] Using json file as credentials
+INFO  [2022-01-19 14:24:26] GCS file data/Model.RData downloaded to Model.RData.
+INFO  [2022-01-19 14:24:36] User admin logged in
+INFO  [2022-01-19 14:43:42] Remote storage set to robyn-test-bucket/data/Model.RData
+INFO  [2022-01-19 14:43:42] Prod set to FALSE
+INFO  [2022-01-19 14:43:42] Using json file as credentials
+INFO  [2022-01-19 14:43:51] GCS file data/Model.RData downloaded to Model.RData.
+INFO  [2022-01-19 14:44:00] User admin logged in
+INFO  [2022-01-19 14:44:39] Remote storage set to robyn-test-bucket/data/Model.RData
+INFO  [2022-01-19 14:44:39] Prod set to FALSE
+INFO  [2022-01-19 14:44:39] Using json file as credentials
+INFO  [2022-01-19 14:44:46] GCS file data/Model.RData downloaded to Model.RData.
+INFO  [2022-01-19 14:44:55] User admin logged in
+INFO  [2022-01-19 14:47:19] Remote storage set to robyn-test-bucket/data/Model.RData
+INFO  [2022-01-19 14:47:19] Prod set to FALSE
+INFO  [2022-01-19 14:47:19] Using json file as credentials
+INFO  [2022-01-19 14:47:28] GCS file data/Model.RData downloaded to Model.RData.
+INFO  [2022-01-19 14:47:39] User admin logged in
+INFO  [2022-01-19 14:49:27] Remote storage set to robyn-test-bucket/data/Model.RData
+INFO  [2022-01-19 14:49:27] Prod set to FALSE
+INFO  [2022-01-19 14:49:27] Using json file as credentials
+INFO  [2022-01-19 14:49:34] GCS file data/Model.RData downloaded to Model.RData.
+INFO  [2022-01-19 14:49:43] User admin logged in
+INFO  [2022-01-19 14:50:17] Remote storage set to robyn-test-bucket/data/Model.RData
+INFO  [2022-01-19 14:50:17] Prod set to FALSE
+INFO  [2022-01-19 14:50:17] Using json file as credentials
+INFO  [2022-01-19 14:50:25] GCS file data/Model.RData downloaded to Model.RData.
+INFO  [2022-01-19 14:50:36] User admin logged in
+INFO  [2022-01-19 14:51:23] Remote storage set to robyn-test-bucket/data/Model.RData
+INFO  [2022-01-19 14:51:23] Prod set to FALSE
+INFO  [2022-01-19 14:51:23] Using json file as credentials
+INFO  [2022-01-19 14:51:30] GCS file data/Model.RData downloaded to Model.RData.
+INFO  [2022-01-19 14:51:40] User admin logged in
+INFO  [2022-01-19 14:52:38] Remote storage set to robyn-test-bucket/data/Model.RData
+INFO  [2022-01-19 14:52:38] Prod set to FALSE
+INFO  [2022-01-19 14:52:38] Using json file as credentials
+INFO  [2022-01-19 14:52:45] GCS file data/Model.RData downloaded to Model.RData.
+INFO  [2022-01-19 14:52:55] User admin logged in
+INFO  [2022-01-19 15:01:39] Remote storage set to robyn-test-bucket/data/Model.RData
+INFO  [2022-01-19 15:01:39] Prod set to FALSE
+INFO  [2022-01-19 15:01:39] Using json file as credentials
+INFO  [2022-01-19 15:01:47] GCS file data/Model.RData downloaded to Model.RData.
+INFO  [2022-01-19 15:01:56] User admin logged in
+INFO  [2022-01-19 15:03:47] Remote storage set to robyn-test-bucket/data/Model.RData
+INFO  [2022-01-19 15:03:47] Prod set to FALSE
+INFO  [2022-01-19 15:03:47] Using json file as credentials
+INFO  [2022-01-19 15:03:56] GCS file data/Model.RData downloaded to Model.RData.
+INFO  [2022-01-19 15:04:03] User admin logged in
+INFO  [2022-01-19 15:08:05] Remote storage set to robyn-test-bucket/data/Model.RData
+INFO  [2022-01-19 15:08:05] Prod set to FALSE
+INFO  [2022-01-19 15:08:05] Using json file as credentials
+INFO  [2022-01-19 15:08:15] GCS file data/Model.RData downloaded to Model.RData.
+INFO  [2022-01-19 15:08:27] User admin logged in
+INFO  [2022-01-19 15:11:47] Remote storage set to robyn-test-bucket/data/Model.RData
+INFO  [2022-01-19 15:11:47] Prod set to FALSE
+INFO  [2022-01-19 15:11:48] Using json file as credentials
+INFO  [2022-01-19 15:11:53] GCS file data/Model.RData downloaded to Model.RData.
+INFO  [2022-01-19 15:12:06] User admin logged in
+INFO  [2022-01-19 15:18:27] Remote storage set to robyn-test-bucket/data/Model.RData
+INFO  [2022-01-19 15:18:27] Prod set to FALSE
+INFO  [2022-01-19 15:18:27] Using json file as credentials
+INFO  [2022-01-19 15:18:35] GCS file data/Model.RData downloaded to Model.RData.
+INFO  [2022-01-19 15:18:45] User admin logged in
+INFO  [2022-01-19 15:20:03] Remote storage set to robyn-test-bucket/data/Model.RData
+INFO  [2022-01-19 15:20:03] Prod set to FALSE
+INFO  [2022-01-19 15:20:03] Using json file as credentials
+INFO  [2022-01-19 15:20:12] GCS file data/Model.RData downloaded to Model.RData.
+INFO  [2022-01-19 15:20:51] User admin logged in
+INFO  [2022-01-19 15:21:42] Remote storage set to robyn-test-bucket/data/Model.RData
+INFO  [2022-01-19 15:21:42] Prod set to FALSE
+INFO  [2022-01-19 15:21:42] Using json file as credentials
+INFO  [2022-01-19 15:21:50] GCS file data/Model.RData downloaded to Model.RData.
+INFO  [2022-01-19 15:21:58] User admin logged in

@@ -209,9 +209,22 @@ server <- function(input, output, session) {
                   fluidRow(
                     column(width = 9,
                            box(
-                             width = NULL, title = "Title", 
+                             width = NULL, title = "Revenue per week", 
+                             withSpinner(plotlyOutput('line_chart_rev_week')),
+                           ),
+                           box(
+                             width = NULL, title = "Media Spend per week", 
+                             withSpinner(plotlyOutput('bar_chart_media_spend_week')),
+                           ),
+                           box(
+                             width = 5, title = "ROI per channel", 
                              withSpinner(plotlyOutput('channel_roi')),
-                           )   
+                           ),
+                           box(
+                             width = 5, title = "ROI per channel", 
+                             withSpinner(plotOutput('pie_chart_contribution')),
+                           )
+   
                     ),
                     column(width = 3,
                            uiOutput('dateSelector')
@@ -223,14 +236,14 @@ server <- function(input, output, session) {
             fluidRow(
               column(width = 9,
                  box(
-                   width = NULL, title = "Title", 
+                   width = NULL, title = "Response curve and mean spend by channel", 
                    withSpinner(plotlyOutput("p14")),
                  ),    
 
                  tabBox(
                    width = NULL,
-                   tabPanel("Otimized Response",withSpinner(plotlyOutput("p12"))),
-                   tabPanel("Optimized budget allocation",withSpinner(plotlyOutput("p13"))),
+                   tabPanel("Otimized mean Response",withSpinner(plotlyOutput("p12"))),
+                   tabPanel("Optimized budget Allocation",withSpinner(plotlyOutput("p13"))),
                  ),
               ),
 
@@ -375,7 +388,14 @@ server <- function(input, output, session) {
                       value = Model$InputCollect$window_end)
         )
       })
+      #output channl ROI
       output$channel_roi <- renderPlotly({PlotHistorical(Model, input$startDate, input$endDate)$channel_roi})
+      # outputu line chart
+      output$line_chart_rev_week <- renderPlotly({line_chart_rev_week(Model, input$startDate, input$endDate)})
+      #output bar chart media spend
+      output$bar_chart_media_spend_week <- renderPlotly({bar_chart_media_spend_week(Model, input$startDate, input$endDate)})
+      #pie chart media contribution
+      output$pie_chart_contribution <- renderPlot({pie_chart_media_contribution(Model, input$startDate, input$endDate)})
       
       #dry run of the allocator
       AllocatorCollect <- Allocate(InputCollect = Model$InputCollect, 

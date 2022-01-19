@@ -15,6 +15,6 @@ install.packages("dashboardthemes")
 install.packages("shinycssloaders")
 install.packages("plotly")
 install.packages("viridis")
-
+install.packages("reshape2")
 
 remotes::install_github("facebookexperimental/Robyn/R")
