@@ -31,6 +31,7 @@ RUN R -e "install.packages('bigrquery', repos='http://cran.rstudio.com/')"
 RUN R -e "install.packages('shinybusy', repos='http://cran.rstudio.com/')"
 RUN R -e "install.packages('dashboardthemes', repos='http://cran.rstudio.com/')"
 RUN R -e "install.packages('shinycssloaders', repos='http://cran.rstudio.com/')"
+RUN R -e "install.packages('viridis', repos='http://cran.rstudio.com/')"
 
 RUN R -e "remotes::install_github('facebookexperimental/Robyn/R')"
 

@@ -210,7 +210,7 @@ server <- function(input, output, session) {
                     column(width = 9,
                            box(
                              width = NULL, title = "Title", 
-                             withSpinner(plotlyOutput('return_per_channel')),
+                             withSpinner(plotlyOutput('channel_roi')),
                            )   
                     ),
                     column(width = 3,
@@ -375,7 +375,7 @@ server <- function(input, output, session) {
                       value = Model$InputCollect$window_end)
         )
       })
-      output$return_per_channel <- renderPlotly({PlotGraph(Model, input$startDate, input$endDate)$return_per_channel})
+      output$channel_roi <- renderPlotly({PlotHistorical(Model, input$startDate, input$endDate)$channel_roi})
       
       #dry run of the allocator
       AllocatorCollect <- Allocate(InputCollect = Model$InputCollect, 
@@ -385,9 +385,9 @@ server <- function(input, output, session) {
                                    channel_constr_low = rep(0.7, each = length(Model$InputCollect$paid_media_vars)), 
                                    channel_constr_up = rep(1.5, each = length(Model$InputCollect$paid_media_vars))
       )
-      output$p12 <- renderPlotly({ggplotly(AllocatorCollect$ui$p12)})
-      output$p13 <- renderPlotly({ggplotly(AllocatorCollect$ui$p13)})
-      output$p14 <- renderPlotly({ggplotly(AllocatorCollect$ui$p14)})
+      output$p12 <- renderPlotly(PlotAllocator(AllocatorCollect)$p1)
+      output$p13 <- renderPlotly(PlotAllocator(AllocatorCollect)$p2)
+      output$p14 <- renderPlotly(PlotAllocator(AllocatorCollect)$p3)
 
       #new run of the allocator
       observeEvent(input$optimizeButton,{
@@ -407,9 +407,9 @@ server <- function(input, output, session) {
                                                expected_spend_days = expected_spend_days
         )})
         
-        output$p12 <- renderPlotly({ggplotly(AllocatorCollect()$ui$p12)})
-        output$p13 <- renderPlotly({ggplotly(AllocatorCollect()$ui$p13)})
-        output$p14 <- renderPlotly({ggplotly(AllocatorCollect()$ui$p14)})
+        output$p12 <- renderPlotly(PlotAllocator(AllocatorCollect())$p1)
+        output$p13 <- renderPlotly(PlotAllocator(AllocatorCollect())$p2)
+        output$p14 <- renderPlotly(PlotAllocator(AllocatorCollect())$p3)
 
       })
 
