@@ -14,7 +14,7 @@ library(plotly)
 #0 ENVIRONMENT SETUP ----
 prod = FALSE
 if(prod == FALSE){
-  setwd("C:/Users/Bastien/robyn/shiny/app")
+  setwd("C:/Users/Youssef/Documents/robyn/shiny/app")
 }
 
 ##0.1 setup the logfile
@@ -26,6 +26,12 @@ level(logger) <- 'INFO'
 source("train.R")
 source("allocator.R")
 source("plot.R")
+virtualenv_create("r-robynshiny")
+virtualenv_exists("r-robynshiny")
+use_virtualenv("r-robynshiny", required = TRUE)
+# py_install("nevergrad")
+# py_install("google-cloud-storage")
+# py_install("google.cloud")
 source_python("gcpSync.py")
 
 #0.3 remote storage
@@ -36,15 +42,11 @@ info(logger, glue('Remote storage set to {bucket}/{remote_model_file}'))
 info(logger, glue('Prod set to {prod}'))
 
 if(prod == FALSE){
-  storage_client = storage_client_with_creds('./credentials/robyn-test-2-672df5a3c62a.json')
+  storage_client = storage_client_with_creds('./credentials/robyn-test-2-58e587891fc8.json')
   info(logger, glue('Using json file as credentials'))
 } else {
   #TODO install the libraries and environment as part as the dockerfile
-  virtualenv_create("r-reticulate")
-  virtualenv_exists("r-reticulate")
-  use_virtualenv("r-reticulate", required = TRUE)
-  py_install("nevergrad", pip = TRUE)
-  py_install("google-cloud-storage", pip = TRUE)
+  
   py_config()
   storage_client = storage_client_without_creds()
   info(logger, glue('Using default credentials'))
@@ -86,9 +88,9 @@ credentials = data.frame(
 )
 
 #2 UI ----
-header <- dashboardHeader( title = "55 | Marketing Mix Modeling", titleWidth = 300, uiOutput("logoutbtn"))
+header <- dashboardHeader( title = "Marketing Budget Optimizer", uiOutput("logoutbtn"))
 sidebar <- dashboardSidebar(uiOutput("sidebarpanel")) 
-body <- dashboardBody(shinyDashboardThemes(theme = "grey_dark"), shinyjs::useShinyjs(), uiOutput("body"))
+body <- dashboardBody(shinyDashboardThemes(theme = "blue_gradient"), shinyjs::useShinyjs(), uiOutput("body"))
 loader <- (options(spinner.color="#0dc5c1", spinner.type  = 7))
 ui<-dashboardPage(header, sidebar, body, loader)
 
@@ -97,7 +99,7 @@ server <- function(input, output, session) {
   login = FALSE
   USER <- reactiveValues(login = login)
   
-#3.1 loggin logic ----  
+  #3.1 loggin logic ----  
   observe({ 
     if (USER$login == FALSE) {
       if (!is.null(input$login)) {
@@ -122,8 +124,8 @@ server <- function(input, output, session) {
       }
     }    
   })
-
-#3.2 reactive UI elements ----    
+  
+  #3.2 reactive UI elements ----    
   output$logoutbtn <- renderUI({
     req(USER$login)
     tags$li(a(icon("fa fa-sign-out"), "Logout", 
@@ -133,7 +135,7 @@ server <- function(input, output, session) {
                     font-weight: bold; margin:5px; padding: 10px;")
   })
   
-#3.2.1 sidebar 
+  #3.2.1 sidebar 
   output$sidebarpanel <- renderUI({
     if (USER$login == TRUE ){ 
       if (credentials[,"permission"][which(credentials$username_id==input$userName)]=="admin") {
@@ -141,14 +143,22 @@ server <- function(input, output, session) {
         sidebarMenu(
           menuItem("Model Training", tabName = "training", icon = icon("flash")),
           menuItem("Model Selection", tabName = "selection", icon = icon("search")),
-          menuItem("Historical Overview", tabName = "overview", icon = icon("signal")),
-          menuItem("Historical Contribution", tabName = "contribution", icon = icon("signal")),
-          menuItem("Budget Optimization", tabName = "optimizer", icon = icon("dashboard"), selected = T),
+          menuItem("Historical", icon = icon("signal"),
+                   menuSubItem("Historical Overview", tabName = "overview"),
+                   menuSubItem("Historical Contribution", tabName = "contribution")
+          ),
+          menuItem("Optimization", icon = icon("dashboard"),
+                   menuSubItem("Budget Optimization", tabName = "optimizer", selected = T),
+                   menuSubItem("Scenario Comparison", tabName = "comparison")
+          ),
           menuItem("Documentation", tabName = "documentation", icon = icon("book")),
-          menuItem("Logs", tabName = "logs", icon = icon("list"))
+          menuItem("Logs", tabName = "logs", icon = icon("list")),
+          uiOutput("dateRangeSelector"),
+          verbatimTextOutput("test")
+          
         )
       }
-        
+      
       else{
         #user pannel ----
         sidebarMenu(
@@ -161,8 +171,8 @@ server <- function(input, output, session) {
       }
     }
   })
-
-#3.2.1 body  
+  
+  #3.2.1 body  
   output$body <- renderUI({
     if (USER$login == TRUE ) {
       if (credentials[,"permission"][which(credentials$username_id==input$userName)]=="admin") {
@@ -170,54 +180,44 @@ server <- function(input, output, session) {
         tabItems(
           #model training ----
           tabItem(tabName ="training",
-            fluidRow(
-              column(width = 9,
-                box(width = NULL, status = "warning", h3('Model Training')),
-                box(title = "Model Pareto", width = NULL, plotlyOutput('modelPareto')),
-                box(title = "Model IDs", width = NULL, verbatimTextOutput('modelIds'))
-              ),
-              column(width = 3,
-                box(width = NULL, status = "warning",
-                  title = "Controls", 
-                  sliderInput("iterations", "Number of Iterations:", 100, 2000, 100),
-                  sliderInput("trials", "Number of Trials:", 1, 10, 1),
-                  actionButton("trainButton", "Train Model")
-                  
-              ))
-            )
+                  fluidRow(
+                    column(width = 9,
+                           box(width = NULL, status = "primary", h3('Model Training')),
+                           box(title = "Model Pareto", width = NULL, plotlyOutput('modelPareto')),
+                           box(title = "Model IDs", width = NULL, verbatimTextOutput('modelIds'))
+                    ),
+                    column(width = 3,
+                           box(width = NULL, status = "primary",
+                               title = "Controls", 
+                               sliderInput("iterations", "Number of Iterations:", 100, 2000, 100),
+                               sliderInput("trials", "Number of Trials:", 1, 10, 1),
+                               actionButton("trainButton", "Train Model")
+                               
+                           ))
+                  )
           ),
           #model selection ----
           tabItem(tabName ="selection",
-            fluidRow(
-              column(width = 9
-              ),
-              column(width = 3,
-                box(width = NULL, status = "warning",
-                  title = "Controls",
-                  actionButton("importModelButton", "Import Existing Models"),
-                  uiOutput('modelSolutions'),
-                  uiOutput('modelSelection')
-                  
-              ),
-              box(width = NULL, status = "warning",
-                  title = "Info",
-                  verbatimTextOutput('saveMessage')
-              )
-              )
-            )
+                  fluidRow(
+                    column(width = 9
+                    ),
+                    column(width = 3,
+                           box(width = NULL, status = "primary",
+                               title = "Controls",
+                               actionButton("importModelButton", "Import Existing Models"),
+                               uiOutput('modelSolutions'),
+                               uiOutput('modelSelection')
+                               
+                           ),
+                           box(width = NULL, status = "primary",title = "Info",verbatimTextOutput('saveMessage'))
+                    )
+                  )
           ),
           #historical spend and revenue ----
           tabItem(tabName ="overview",
                   fluidRow(
                     column(width = 9,
-                           box(
-                             width = NULL, title = "Revenue per week", 
-                             withSpinner(plotlyOutput('line_chart_rev_week')),
-                           ),
-                           box(
-                             width = NULL, title = "Media Spend per week", 
-                             withSpinner(plotlyOutput('bar_chart_media_spend_week')),
-                           ),
+                           box(width = NULL, title = "Revenue and Spend: Historical overview per channel",  withSpinner(plotlyOutput('WeeklyRevSpend'))),
                     ),
                     column(width = 3,
                            uiOutput('DateSelectorOverview')
@@ -228,15 +228,9 @@ server <- function(input, output, session) {
           tabItem(tabName ="contribution",
                   fluidRow(
                     column(width = 9,
-                           box(
-                             width = NULL, title = "ROI per channel", 
-                             withSpinner(plotlyOutput('channel_roi')),
-                           ),
-                           box(
-                             width = NULL, title = "ROI per channel", 
-                             withSpinner(plotOutput('pie_chart_contribution')),
-                           )
-   
+                           box(width = NULL, title = "Revenue Contribution", withSpinner(plotlyOutput('HistoricalRevenue'))),
+                           box(width = NULL, title = "Revenue Contribution paid media", withSpinner(plotlyOutput('HistoricalRevenuepaidmedia'))),
+                           box(width = NULL, title = "ROI Contribution", withSpinner(plotlyOutput('WaterfallContrib')),)
                     ),
                     column(width = 3,
                            uiOutput('DateSelectorContrib')
@@ -245,62 +239,108 @@ server <- function(input, output, session) {
           ),
           #budget optimizer ----
           tabItem(tabName ="optimizer", class = "active",
-            fluidRow(
-              column(width = 9,
-                 box(
-                   width = NULL, title = "Response curve and mean spend by channel", 
-                   withSpinner(plotlyOutput("p14")),
-                 ),    
-
-                 tabBox(
-                   width = NULL,
-                   tabPanel("Otimized mean Response",withSpinner(plotlyOutput("p12"))),
-                   tabPanel("Optimized budget Allocation",withSpinner(plotlyOutput("p13"))),
-                 ),
-              ),
-
-              column(width = 3,
-                box(width = NULL, status = "warning",
-                  title = "Scenario",
-                  uiOutput('SelectedModel'),
-                  "Selected marketing allocation scenario",
-                  selectInput( "scenario", "Choose a scenario:",
-                    c(
-                      "Max historical response" = "max_historical_response",
-                      "Max response expected spend" = "max_response_expected_spend"
+                  fluidRow(
+                    column(width = 9,
+                           box(width = NULL, title = "Response curve and mean spend by channel", withSpinner(plotlyOutput("AllocatorCurve"))),
+                           box(width = 6, title = "Otimized mean Response",withSpinner(plotlyOutput("ResponseComparison"))),
+                           box(width = 6, title = "Optimized spend per channel", withSpinner(dataTableOutput("AllocatorTable"))),    
+                           
+                    ),
+                    column(width = 3,
+                           box(width = NULL, status = "primary",title = "Scenario",
+                               uiOutput('SelectedModel'),
+                               "Selected marketing allocation scenario",
+                               selectInput( "scenario", "Choose a scenario:",
+                                            c(
+                                              "Max historical response" = "max_historical_response",
+                                              "Max response expected spend" = "max_response_expected_spend"
+                                            )
+                               ),
+                               conditionalPanel(condition = "input.scenario == 'max_response_expected_spend'",
+                                                numericInput("expected_spend", "Expected Spend", 0),
+                                                numericInput("expected_spend_days", "Expected Spend Days", 0)
+                               )
+                           ),
+                           box(width = NULL, status = "primary", solidHeader = TRUE,
+                               title = "Channel Constraints",
+                               "Range of budget multiplier based on historical allocation",
+                               uiOutput('channelConstr')
+                           ),
+                           box(width = NULL, status = "success", solidHeader = TRUE,
+                               title = "Optimization",
+                               "Integration of the parameters within the allocation optimization",
+                               actionButton("optimizeButton", "Refresh Budget Allocation")
+                           )
                     )
-                  ),
-                  conditionalPanel(condition = "input.scenario == 'max_response_expected_spend'",
-                    numericInput("expected_spend", "Expected Spend", 0),
-                    numericInput("expected_spend_days", "Expected Spend Days", 0)
                   )
-                ),
-                box(width = NULL, status = "warning", solidHeader = TRUE,
-                    title = "Channel Constraints",
-                    "Range of budget multiplier based on historical allocation",
-                    uiOutput('channelConstr')
-                ),
-                box(width = NULL, status = "warning", solidHeader = TRUE,
-                    title = "Optimization",
-                    "Integration of the parameters within the allocation optimization",
-                    actionButton("optimizeButton", "Refresh Budget Allocation")
-                )
-              )
-            )
+          ),
+          
+          tabItem(tabName ="comparison", class = "active",
+                  fluidRow(
+                    column(width = 5,
+                           h4("Scenario 1"),
+                           
+                           actionButton("optimizeButton1", "Refresh Budget Allocation"),
+                           
+                           selectInput( "scenario1", "Choose a scenario:",
+                                        c(
+                                          "Max historical response" = "max_historical_response",
+                                          "Max response expected spend" = "max_response_expected_spend"
+                                        )
+                           ),
+                           conditionalPanel(condition = "input.scenario1 == 'max_response_expected_spend'",
+                                            numericInput("expected_spend1", "Expected Spend", 0),
+                                            numericInput("expected_spend_days1", "Expected Spend Days", 0)
+                           )
+                           ,
+                           
+                           uiOutput('channelConstr1')
+                           ,
+                           
+                           
+                           withSpinner(dataTableOutput("AllocatorTable1"))
+                           
+                    ),
+                           
+                    
+                           column(width = 5,
+                                  h4("Scenario 2"),
+                                  
+                                  actionButton("optimizeButton2", "Refresh Budget Allocation"),
+                                  
+                                  selectInput( "scenario2", "Choose a scenario:",
+                                               c(
+                                                 "Max historical response" = "max_historical_response",
+                                                 "Max response expected spend" = "max_response_expected_spend"
+                                               )
+                                  ),
+                                  conditionalPanel(condition = "input.scenario2 == 'max_response_expected_spend'",
+                                                   numericInput("expected_spend2", "Expected Spend", 0),
+                                                   numericInput("expected_spend_days2", "Expected Spend Days", 0)
+                                  )
+                                  ,
+                                  
+                                  uiOutput('channelConstr2')
+                                  ,
+                                  withSpinner(dataTableOutput("AllocatorTable2"))
+                    ),
+                    fluidRow(
+                    box(width =12,withSpinner(plotlyOutput("ResponseComparisonscenario")))
+          ))
           ),
           #logs ----
           tabItem(tabName ="logs",
-            fluidRow(
-              column(width = 9,
-               box(width = NULL, status = "info", title = "Training Logs",dataTableOutput('logs'))
-              ),
-              column(width = 3,
-                     box(width = NULL, status = "info",
-                         title = "Controls",
-                         actionButton("RefreshLogs", "Refresh"),
-                         actionButton("resetLogs", "Reset Logs")
-                     ))
-            )
+                  fluidRow(
+                    column(width = 9,
+                           box(width = NULL, status = "info", title = "Training Logs",dataTableOutput('logs'))
+                    ),
+                    column(width = 3,
+                           box(width = NULL, status = "info",
+                               title = "Controls",
+                               actionButton("RefreshLogs", "Refresh"),
+                               actionButton("resetLogs", "Reset Logs")
+                           ))
+                  )
           )
         )
       } 
@@ -319,9 +359,9 @@ server <- function(input, output, session) {
       loginpage
     }
   })
-
-#3.3 Processing logic ----  
-#3.3.1 train model ----
+  
+  #3.3 Processing logic ----  
+  #3.3.1 train model ----
   observeEvent(input$trainButton, {
     show_modal_spinner(
       "circle",
@@ -339,7 +379,7 @@ server <- function(input, output, session) {
     remove_modal_spinner()
   })
   
-#3.3.2 import model ----
+  #3.3.2 import model ----
   observeEvent(input$importModelButton, {
     exists <- blob_exists(storage_client, bucket, remote_model_file)
     info(logger, glue('Checking if remote file exists in {bucket}: {exists}'))
@@ -364,16 +404,32 @@ server <- function(input, output, session) {
       print('Model was not found in remote storage')
     }
   })
-
   
   
-#3.3.3 budget optimizer ----
+  
+  #3.3.3 main processing ----
   print("trying to load existing model from GCS")
+  #check the model exists in GCS
   exists <- blob_exists(storage_client, bucket, remote_model_file)
+  exists <- TRUE
+  #create date range selecor
+  output$dateRangeSelector <- renderUI({
+    dateRangeInput('dateRange',
+                   label = 'Date range:',
+                   start = Model$InputCollect$window_start, 
+                   end = Model$InputCollect$window_end,
+                   min = Model$InputCollect$window_start,
+                   max = Model$InputCollect$window_end
+    )
+  })
+  
+  
   if (exists) {
     #download the model
     info(logger, download_blob(storage_client, bucket, remote_model_file, local_model_file))
     load(local_model_file)
+    #date range selector
+    
     #scalable channel constraint selectors
     output$channelConstr <- renderUI({
       lapply(Model$InputCollect$paid_media_vars, 
@@ -382,56 +438,40 @@ server <- function(input, output, session) {
              }
       )
     })
+    
+    output$channelConstr1 <- renderUI({
+      lapply(Model$InputCollect$paid_media_vars, 
+             function(i){sliderInput(
+               inputId = paste0("constr_", i), i, 0.01, 2, value = c(0.7, 1.5), step = 0.1)
+             }
+      )
+      
+      
+    })
+    
+    output$channelConstr2 <- renderUI({
+      lapply(Model$InputCollect$paid_media_vars, 
+             function(i){sliderInput(
+               inputId = paste0("constr_", i), i, 0.01, 2, value = c(0.7, 1.5), step = 0.1)
+             }
+      )
+      
+      
+    })
     #if a model has already been selected
     if (!is.null(Model$model_id)){
+      #revenue and spend over time
+      output$WeeklyRevSpend <- renderPlotly({PlotWeeklyRevSpend(Model, input$dateRange[1], input$dateRange[2])})
+      #Global channel revenu
+      output$HistoricalRevenue <- renderPlotly({PlotHistoricalRev(Model, input$dateRange[1], input$dateRange[2])})
+      #Global channel Revenue paid media
+      output$HistoricalRevenuepaidmedia <- renderPlotly({PlotHistoricalRevpaidmedia(Model, input$dateRange[1], input$dateRange[2])})
+      #contribution waterfall plot
+      output$WaterfallContrib <- renderPlotly({PlotWaterfallContrib(Model)})
       
-      #historical overview date range
-      output$DateSelectorOverview <- renderUI({
-        box(width = NULL, status = "warning",
-            title = "Date range",
-            dateInput("start_date_overview", label = "Start Date",
-                      min = Model$InputCollect$window_start,
-                      max = Model$InputCollect$window_end,
-                      value = if(Model$InputCollect$window_start != input$start_date_overview){input$start_date_overview}else{Model$InputCollect$window_start}
-                      ),
-            
-            dateInput("end_date_overview", label = "End Date", 
-                      min = Model$InputCollect$window_start,
-                      max = Model$InputCollect$window_end,
-                      value = if(Model$InputCollect$window_end != input$end_date_overview){input$end_date_overview}else{Model$InputCollect$window_end}
-                      )
-        )
-      })
-      #revenue over time line chart
-      output$line_chart_rev_week <- renderPlotly({line_chart_rev_week(Model, input$start_date_overview, input$end_date_overview)})
-      #share media spend over time
-      output$bar_chart_media_spend_week <- renderPlotly({bar_chart_media_spend_week(Model, input$start_date_overview, input$end_date_overview)})
-      
-      #historical contribution date range
-      output$DateSelectorContrib <- renderUI({
-        box(width = NULL, status = "warning",
-            title = "Date range",
-            dateInput("start_date_contrib", label = "Start Date",
-                      min = Model$InputCollect$window_start,
-                      max = Model$InputCollect$window_end,
-                      value = if(Model$InputCollect$window_start != input$start_date_overview){input$start_date_overview}else{Model$InputCollect$window_start}
-                      ),
-            
-            dateInput("end_date_contrib", label = "End Date", 
-                      min = Model$InputCollect$window_start,
-                      max = Model$InputCollect$window_end,
-                      value = if(Model$InputCollect$window_end != input$end_date_overview){input$end_date_overview}else{Model$InputCollect$window_end}
-                      )
-        )
-      })
-      #update the inputs to match each other
-
-      #Global channel ROI
-      output$channel_roi <- renderPlotly({PlotHistorical(Model, input$start_date_contrib, input$end_date_contrib)$channel_roi})
-      #channel contribution pie chart
-      output$pie_chart_contribution <- renderPlot({pie_chart_media_contribution(Model, input$end_date_contrib, input$endDate)})
       
       #dry run of the allocator
+      Model$OutputCollect$plot_folder <- paste0(getwd(),"/output/out/")
       AllocatorCollect <- Allocate(InputCollect = Model$InputCollect, 
                                    OutputCollect= Model$OutputCollect, 
                                    select_model = Model$model_id, 
@@ -439,10 +479,11 @@ server <- function(input, output, session) {
                                    channel_constr_low = rep(0.7, each = length(Model$InputCollect$paid_media_vars)), 
                                    channel_constr_up = rep(1.5, each = length(Model$InputCollect$paid_media_vars))
       )
-      output$p12 <- renderPlotly(PlotAllocator(AllocatorCollect)$p1)
-      output$p13 <- renderPlotly(PlotAllocator(AllocatorCollect)$p2)
-      output$p14 <- renderPlotly(PlotAllocator(AllocatorCollect)$p3)
-
+      AllocatorGraphs <- PlotAllocatorGraphs(Model, AllocatorCollect)
+      output$AllocatorCurve <- renderPlotly(AllocatorGraphs$fig_curve)
+      output$AllocatorTable <- renderDataTable(AllocatorGraphs$table_curve)
+      output$ResponseComparison <- renderPlotly(AllocatorGraphs$fig_response_comparison)
+      
       #new run of the allocator
       observeEvent(input$optimizeButton,{
         channel_consrt_low_val <- lapply(Model$InputCollect$paid_media_vars, function(i){input[[paste0("constr_", i)]][1]})
@@ -460,13 +501,86 @@ server <- function(input, output, session) {
                                                expected_spend = expected_spend,
                                                expected_spend_days = expected_spend_days
         )})
+        AllocatorGraphs <- reactive({PlotAllocatorGraphs(Model, AllocatorCollect())})
+        output$AllocatorCurve <- renderPlotly(AllocatorGraphs()$fig_curve)
+        output$AllocatorTable <- renderDataTable(AllocatorGraphs()$table_curve)
+        output$ResponseComparison <- renderPlotly(AllocatorGraphs()$fig_response_comparison)
         
-        output$p12 <- renderPlotly(PlotAllocator(AllocatorCollect())$p1)
-        output$p13 <- renderPlotly(PlotAllocator(AllocatorCollect())$p2)
-        output$p14 <- renderPlotly(PlotAllocator(AllocatorCollect())$p3)
-
       })
+      
 
+      AllocatorCollect1 <- Allocate(InputCollect = Model$InputCollect, 
+                                   OutputCollect= Model$OutputCollect, 
+                                   select_model = Model$model_id, 
+                                   scenario ="max_historical_response",
+                                   channel_constr_low = rep(0.7, each = length(Model$InputCollect$paid_media_vars)), 
+                                   channel_constr_up = rep(1.5, each = length(Model$InputCollect$paid_media_vars))
+      )
+      AllocatorGraphs1 <- PlotAllocatorGraphs(Model, AllocatorCollect1)
+      output$AllocatorCurve1 <- renderPlotly(AllocatorGraphs1$fig_curve)
+      output$AllocatorTable1 <- renderDataTable(AllocatorGraphs1$table_curve)
+      output$ResponseComparisonscenario <- renderPlotly(responsecomparisonbar(Model,AllocatorCollect1,AllocatorCollect2))
+      
+      #new run of the allocator
+      observeEvent(input$optimizeButton1,{
+        channel_consrt_low_val <- lapply(Model$InputCollect$paid_media_vars, function(i){input[[paste0("constr_", i)]][1]})
+        channel_consrt_up_val <- lapply(Model$InputCollect$paid_media_vars, function(i){input[[paste0("constr_", i)]][2]})
+        scenario <- input$scenario1
+        expected_spend <- input$expected_spend1
+        expected_spend_days <- input$expected_spend_days1
+        #run the allocator (reactive so that the loading effect takes place as soon as it is refreshed)
+        AllocatorCollect1 <- reactive({Allocate(Model$InputCollect, 
+                                               Model$OutputCollect, 
+                                               Model$model_id, 
+                                               scenario = scenario,
+                                               channel_constr_low = unlist(channel_consrt_low_val), 
+                                               channel_constr_up = unlist(channel_consrt_up_val),
+                                               expected_spend = expected_spend,
+                                               expected_spend_days = expected_spend_days
+        )})
+        AllocatorGraphs1 <- reactive({PlotAllocatorGraphs(Model, AllocatorCollect1())})
+        output$AllocatorCurve1 <- renderPlotly(AllocatorGraphs1()$fig_curve)
+        output$AllocatorTable1 <- renderDataTable(AllocatorGraphs1()$table_curve)
+        output$ResponseComparisonscenario <- renderPlotly(responsecomparisonbar(Model,AllocatorCollect1,AllocatorCollect2))
+        
+      })
+      
+      AllocatorCollect2 <- Allocate(InputCollect = Model$InputCollect, 
+                                    OutputCollect= Model$OutputCollect, 
+                                    select_model = Model$model_id, 
+                                    scenario ="max_historical_response",
+                                    channel_constr_low = rep(0.7, each = length(Model$InputCollect$paid_media_vars)), 
+                                    channel_constr_up = rep(1.5, each = length(Model$InputCollect$paid_media_vars))
+      )
+      AllocatorGraphs2 <- PlotAllocatorGraphs(Model, AllocatorCollect2)
+      output$AllocatorCurve2 <- renderPlotly(AllocatorGraphs1$fig_curve)
+      output$AllocatorTable2 <- renderDataTable(AllocatorGraphs1$table_curve)
+      output$ResponseComparisonscenario <-  renderPlotly(responsecomparisonbar(Model,AllocatorCollect1,AllocatorCollect2))
+      
+      #new run of the allocator
+      observeEvent(input$optimizeButton2,{
+        channel_consrt_low_val <- lapply(Model$InputCollect$paid_media_vars, function(i){input[[paste0("constr_", i)]][1]})
+        channel_consrt_up_val <- lapply(Model$InputCollect$paid_media_vars, function(i){input[[paste0("constr_", i)]][2]})
+        scenario <- input$scenario2
+        expected_spend <- input$expected_spend2
+        expected_spend_days <- input$expected_spend_days2
+        #run the allocator (reactive so that the loading effect takes place as soon as it is refreshed)
+        AllocatorCollect2 <- reactive({Allocate(Model$InputCollect, 
+                                                Model$OutputCollect, 
+                                                Model$model_id, 
+                                                scenario = scenario,
+                                                channel_constr_low = unlist(channel_consrt_low_val), 
+                                                channel_constr_up = unlist(channel_consrt_up_val),
+                                                expected_spend = expected_spend,
+                                                expected_spend_days = expected_spend_days
+        )})
+        AllocatorGraphs2 <- reactive({PlotAllocatorGraphs(Model, AllocatorCollect2())})
+        output$AllocatorCurve2 <- renderPlotly(AllocatorGraphs2()$fig_curve)
+        output$AllocatorTable2 <- renderDataTable(AllocatorGraphs2()$table_curve)
+        output$ResponseComparisonscenario <- renderPlotly(responsecomparisonbar(Model,AllocatorCollect1,AllocatorCollect2))
+        
+      })
+      
     }else{
       print('Model does not contain a selected model_id')
     }
@@ -474,7 +588,7 @@ server <- function(input, output, session) {
     print('Model was not found in remote storage')
   }
   
-#log file ----
+  #log file ----
   #3.2.2 reactive logs
   observeEvent(input$RefreshLogs, {
     logdata <- read.delim('serverData.log',header=FALSE)
@@ -491,5 +605,3 @@ server <- function(input, output, session) {
 }
 
 runApp(list(ui = ui, server = server), launch.browser = TRUE, host='0.0.0.0', port=3838)
-
-
