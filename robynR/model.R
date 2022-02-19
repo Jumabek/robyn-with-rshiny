@@ -503,7 +503,7 @@ robyn_run <- function(InputCollect,
                               .export = ls(globalenv()),
                               .packages = c("ggplot2", "doParallel", "foreach", "data.table", "Robyn", "patchwork", "grid", "scales")) %dorng% {
       #TODO
-      .libPaths("C:/Users/Bastien/Documents/R/win-library/4.1")
+      .libPaths("C:/Users/jumabek/Documents/R/win-library/4.1")
       ## plot spend x effect share comparison
       plotMediaShareLoop <- plotMediaShare[solID == sid]
       #TODO save data
@@ -1194,7 +1194,7 @@ robyn_mmm <- function(hyper_collect,
           #####################################
           #### Get hyperparameter sample
           #TODO
-          .libPaths("C:/Users/Bastien/Documents/R/win-library/4.1")
+          .libPaths("C:/Users/Jumabek/Documents/R/win-library/4.1")
           hypParamSam <- unlist(hypParamSamNG[i])
 
           #### Tranform media with hyperparameters

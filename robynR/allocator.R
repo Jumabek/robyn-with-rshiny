@@ -672,6 +672,7 @@ robyn_allocator <- function(robyn_object = NULL,
   )
 
   message("Exporting charts into file: ", paste0(OutputCollect$plot_folder, select_model, "_reallocated.png"))
+  message("Calling GGsave")
   ggsave(
     filename = paste0(OutputCollect$plot_folder, select_model, "_reallocated.png"),
     plot = g,

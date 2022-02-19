@@ -12,9 +12,9 @@ library(shinycssloaders)
 library(plotly)
 
 #0 ENVIRONMENT SETUP ----
-prod = FALSE
+prod = TRUE
 if(prod == FALSE){
-  setwd("C:/Users/Bastien/robyn/shiny/app")
+  setwd("C:/Users/jumabek/robyn/shiny/app")
 }
 
 ##0.1 setup the logfile
@@ -26,13 +26,12 @@ level(logger) <- 'INFO'
 source("train.R")
 source("allocator.R")
 source("plot.R")
-source_python("gcpSync.py")
+
 
 #0.3 remote storage
 bucket = 'robyn-test-bucket'
-local_model_file = 'Model.RData'
-remote_model_file = 'data/Model.RData'
-info(logger, glue('Remote storage set to {bucket}/{remote_model_file}'))
+local_model_file = '/Users/jumabek/code/fixedpoint/robyn-with-rshiny/shiny/app/Model.RData'
+#remote_model_file = 'data/JumaModel.RData'
 info(logger, glue('Prod set to {prod}'))
 
 if(prod == FALSE){
@@ -40,15 +39,19 @@ if(prod == FALSE){
   info(logger, glue('Using json file as credentials'))
 } else {
   #TODO install the libraries and environment as part as the dockerfile
-  virtualenv_create("r-reticulate")
-  virtualenv_exists("r-reticulate")
-  use_virtualenv("r-reticulate", required = TRUE)
+  # virtualenv_create("r-reticulate")
+  # virtualenv_exists("r-reticulate")
+  # use_virtualenv("r-reticulate", required = TRUE)
+  use_condaenv("r-reticulate")
   py_install("nevergrad", pip = TRUE)
   py_install("google-cloud-storage", pip = TRUE)
   py_config()
-  storage_client = storage_client_without_creds()
+  
+  source_python("gcpSync.py")# uses google library
+  #storage_client = storage_client_with_creds('./credentials/robyn-test-2-672df5a3c62a.json') #storage_client_without_creds()
   info(logger, glue('Using default credentials'))
 }
+
 
 
 #1 LOGIN SCREEN ----
@@ -97,7 +100,7 @@ server <- function(input, output, session) {
   login = FALSE
   USER <- reactiveValues(login = login)
   
-#3.1 loggin logic ----  
+  #3.1 loggin logic ----  
   observe({ 
     if (USER$login == FALSE) {
       if (!is.null(input$login)) {
@@ -122,8 +125,8 @@ server <- function(input, output, session) {
       }
     }    
   })
-
-#3.2 reactive UI elements ----    
+  
+  #3.2 reactive UI elements ----    
   output$logoutbtn <- renderUI({
     req(USER$login)
     tags$li(a(icon("fa fa-sign-out"), "Logout", 
@@ -133,7 +136,7 @@ server <- function(input, output, session) {
                     font-weight: bold; margin:5px; padding: 10px;")
   })
   
-#3.2.1 sidebar 
+  #3.2.1 sidebar 
   output$sidebarpanel <- renderUI({
     if (USER$login == TRUE ){ 
       if (credentials[,"permission"][which(credentials$username_id==input$userName)]=="admin") {
@@ -148,7 +151,7 @@ server <- function(input, output, session) {
           menuItem("Logs", tabName = "logs", icon = icon("list"))
         )
       }
-        
+      
       else{
         #user pannel ----
         sidebarMenu(
@@ -161,8 +164,8 @@ server <- function(input, output, session) {
       }
     }
   })
-
-#3.2.1 body  
+  
+  #3.2.1 body / UI
   output$body <- renderUI({
     if (USER$login == TRUE ) {
       if (credentials[,"permission"][which(credentials$username_id==input$userName)]=="admin") {
@@ -170,41 +173,41 @@ server <- function(input, output, session) {
         tabItems(
           #model training ----
           tabItem(tabName ="training",
-            fluidRow(
-              column(width = 9,
-                box(width = NULL, status = "warning", h3('Model Training')),
-                box(title = "Model Pareto", width = NULL, plotlyOutput('modelPareto')),
-                box(title = "Model IDs", width = NULL, verbatimTextOutput('modelIds'))
-              ),
-              column(width = 3,
-                box(width = NULL, status = "warning",
-                  title = "Controls", 
-                  sliderInput("iterations", "Number of Iterations:", 100, 2000, 100),
-                  sliderInput("trials", "Number of Trials:", 1, 10, 1),
-                  actionButton("trainButton", "Train Model")
-                  
-              ))
-            )
+                  fluidRow(
+                    column(width = 9,
+                           box(width = NULL, status = "warning", h3('Model Training')),
+                           box(title = "Model Pareto", width = NULL, plotlyOutput('modelPareto')),
+                           box(title = "Model IDs", width = NULL, verbatimTextOutput('modelIds'))
+                    ),
+                    column(width = 3,
+                           box(width = NULL, status = "warning",
+                               title = "Controls", 
+                               sliderInput("iterations", "Number of Iterations:", 100, 2000, 100),
+                               sliderInput("trials", "Number of Trials:", 1, 10, 1),
+                               actionButton("trainButton", "Train Model")
+                               
+                           ))
+                  )
           ),
           #model selection ----
           tabItem(tabName ="selection",
-            fluidRow(
-              column(width = 9
-              ),
-              column(width = 3,
-                box(width = NULL, status = "warning",
-                  title = "Controls",
-                  actionButton("importModelButton", "Import Existing Models"),
-                  uiOutput('modelSolutions'),
-                  uiOutput('modelSelection')
-                  
-              ),
-              box(width = NULL, status = "warning",
-                  title = "Info",
-                  verbatimTextOutput('saveMessage')
-              )
-              )
-            )
+                  fluidRow(
+                    column(width = 9
+                    ),
+                    column(width = 3,
+                           box(width = NULL, status = "warning",
+                               title = "Controls",
+                               actionButton("importModelButton", "Import Existing Models"),
+                               uiOutput('modelSolutions'),
+                               uiOutput('modelSelection')
+                               
+                           ),
+                           box(width = NULL, status = "warning",
+                               title = "Info",
+                               verbatimTextOutput('saveMessage')
+                           )
+                    )
+                  )
           ),
           #historical spend and revenue ----
           tabItem(tabName ="overview",
@@ -236,7 +239,7 @@ server <- function(input, output, session) {
                              width = NULL, title = "ROI per channel", 
                              withSpinner(plotOutput('pie_chart_contribution')),
                            )
-   
+                           
                     ),
                     column(width = 3,
                            uiOutput('DateSelectorContrib')
@@ -245,62 +248,62 @@ server <- function(input, output, session) {
           ),
           #budget optimizer ----
           tabItem(tabName ="optimizer", class = "active",
-            fluidRow(
-              column(width = 9,
-                 box(
-                   width = NULL, title = "Response curve and mean spend by channel", 
-                   withSpinner(plotlyOutput("p14")),
-                 ),    
-
-                 tabBox(
-                   width = NULL,
-                   tabPanel("Otimized mean Response",withSpinner(plotlyOutput("p12"))),
-                   tabPanel("Optimized budget Allocation",withSpinner(plotlyOutput("p13"))),
-                 ),
-              ),
-
-              column(width = 3,
-                box(width = NULL, status = "warning",
-                  title = "Scenario",
-                  uiOutput('SelectedModel'),
-                  "Selected marketing allocation scenario",
-                  selectInput( "scenario", "Choose a scenario:",
-                    c(
-                      "Max historical response" = "max_historical_response",
-                      "Max response expected spend" = "max_response_expected_spend"
+                  fluidRow(
+                    column(width = 9,
+                           box(
+                             width = NULL, title = "Response curve and mean spend by channel", 
+                             withSpinner(plotlyOutput("p14")),
+                           ),    
+                           
+                           tabBox(
+                             width = NULL,
+                             tabPanel("Otimized mean Response",withSpinner(plotlyOutput("p12"))),
+                             tabPanel("Optimized budget Allocation",withSpinner(plotlyOutput("p13"))),
+                           ),
+                    ),
+                    
+                    column(width = 3,
+                           box(width = NULL, status = "warning",
+                               title = "Scenario",
+                               uiOutput('SelectedModel'),
+                               "Selected marketing allocation scenario",
+                               selectInput( "scenario", "Choose a scenario:",
+                                            c(
+                                              "Max historical response" = "max_historical_response",
+                                              "Max response expected spend" = "max_response_expected_spend"
+                                            )
+                               ),
+                               conditionalPanel(condition = "input.scenario == 'max_response_expected_spend'",
+                                                numericInput("expected_spend", "Expected Spend", 0),
+                                                numericInput("expected_spend_days", "Expected Spend Days", 0)
+                               )
+                           ),
+                           box(width = NULL, status = "warning", solidHeader = TRUE,
+                               title = "Channel Constraints",
+                               "Range of budget multiplier based on historical allocation",
+                               uiOutput('channelConstr')
+                           ),
+                           box(width = NULL, status = "warning", solidHeader = TRUE,
+                               title = "Optimization",
+                               "Integration of the parameters within the allocation optimization",
+                               actionButton("optimizeButton", "Refresh Budget Allocation")
+                           )
                     )
-                  ),
-                  conditionalPanel(condition = "input.scenario == 'max_response_expected_spend'",
-                    numericInput("expected_spend", "Expected Spend", 0),
-                    numericInput("expected_spend_days", "Expected Spend Days", 0)
                   )
-                ),
-                box(width = NULL, status = "warning", solidHeader = TRUE,
-                    title = "Channel Constraints",
-                    "Range of budget multiplier based on historical allocation",
-                    uiOutput('channelConstr')
-                ),
-                box(width = NULL, status = "warning", solidHeader = TRUE,
-                    title = "Optimization",
-                    "Integration of the parameters within the allocation optimization",
-                    actionButton("optimizeButton", "Refresh Budget Allocation")
-                )
-              )
-            )
           ),
           #logs ----
           tabItem(tabName ="logs",
-            fluidRow(
-              column(width = 9,
-               box(width = NULL, status = "info", title = "Training Logs",dataTableOutput('logs'))
-              ),
-              column(width = 3,
-                     box(width = NULL, status = "info",
-                         title = "Controls",
-                         actionButton("RefreshLogs", "Refresh"),
-                         actionButton("resetLogs", "Reset Logs")
-                     ))
-            )
+                  fluidRow(
+                    column(width = 9,
+                           box(width = NULL, status = "info", title = "Training Logs",dataTableOutput('logs'))
+                    ),
+                    column(width = 3,
+                           box(width = NULL, status = "info",
+                               title = "Controls",
+                               actionButton("RefreshLogs", "Refresh"),
+                               actionButton("resetLogs", "Reset Logs")
+                           ))
+                  )
           )
         )
       } 
@@ -319,9 +322,9 @@ server <- function(input, output, session) {
       loginpage
     }
   })
-
-#3.3 Processing logic ----  
-#3.3.1 train model ----
+  
+  #3.3 Processing logic ----  
+  #3.3.1 train model ----
   observeEvent(input$trainButton, {
     show_modal_spinner(
       "circle",
@@ -335,146 +338,162 @@ server <- function(input, output, session) {
     output$modelPareto <- renderPlotly(ggplotly(Model$OutputCollect$UI$pParFront))
     output$modelIds <- renderText(Model$OutputCollect$xDecompAgg$solID)
     #save the model to gcs
-    info(logger, upload_blob(storage_client, bucket, local_model_file, remote_model_file))
+    #info(logger, upload_blob(storage_client, bucket, local_model_file, remote_model_file))
     remove_modal_spinner()
   })
   
-#3.3.2 import model ----
+  #3.3.2 import model ----
   observeEvent(input$importModelButton, {
-    exists <- blob_exists(storage_client, bucket, remote_model_file)
-    info(logger, glue('Checking if remote file exists in {bucket}: {exists}'))
-    if (exists) {
-      #download the model
-      info(logger, download_blob(storage_client, bucket, remote_model_file, local_model_file))
-      load(local_model_file)
-      output$modelSolutions <- renderUI({selectInput("model_id","Select Model", Model$OutputCollect$allSolutions)})
-      output$modelSelection <- renderUI({actionButton("selectModelButton", "Choose this models")})
-      
-      #once the model is selected, save the selected id to the model object
-      observeEvent(input$selectModelButton, {
-        Model$model_id <- input$model_id
-        info(logger, glue("Model selected: {Model$model_id}"))
-        save(Model, file = "Model.RData")
-        #save the model object to GCS
-        info(logger, upload_blob(storage_client, bucket, local_model_file, remote_model_file))
-        output$saveMessage <- renderText(glue('Model {Model$model_id} was saved to GCS'))
-        
-      })
-    }else{
-      print('Model was not found in remote storage')
-    }
-  })
-
-  
-  
-#3.3.3 budget optimizer ----
-  print("trying to load existing model from GCS")
-  exists <- blob_exists(storage_client, bucket, remote_model_file)
-  if (exists) {
+    
+    
+    
     #download the model
-    info(logger, download_blob(storage_client, bucket, remote_model_file, local_model_file))
+    info(logger, glue("Checking if {local_model_file} exists"))
     load(local_model_file)
-    #scalable channel constraint selectors
-    output$channelConstr <- renderUI({
-      lapply(Model$InputCollect$paid_media_vars, 
-             function(i){sliderInput(
-               inputId = paste0("constr_", i), i, 0.01, 2, value = c(0.7, 1.5), step = 0.1)
-             }
+    output$modelSolutions <- renderUI({selectInput("model_id","Select Model", Model$OutputCollect$allSolutions)})
+    output$modelSelection <- renderUI({actionButton("selectModelButton", "Choose this models")})
+    
+    #once the model is selected, save the selected id to the model object
+    observeEvent(input$selectModelButton, {
+      Model$model_id <- input$model_id
+      info(logger, glue("Model selected: {Model$model_id}"))
+      save(Model, file = "Model.RData")
+      
+    })
+  })
+  
+  # #3.3.2 import model ----
+  # observeEvent(input$importModelButton, {
+  #   exists <- blob_exists(storage_client, bucket, remote_model_file)
+  #   info(logger, glue('Checking if remote file exists in {bucket}: {exists}'))
+  #   if (exists) {
+  #     #download the model
+  #     info(logger, download_blob(storage_client, bucket, remote_model_file, local_model_file))
+  #     load(local_model_file)
+  #     output$modelSolutions <- renderUI({selectInput("model_id","Select Model", Model$OutputCollect$allSolutions)})
+  #     output$modelSelection <- renderUI({actionButton("selectModelButton", "Choose this models")})
+  #     
+  #     #once the model is selected, save the selected id to the model object
+  #     observeEvent(input$selectModelButton, {
+  #       Model$model_id <- input$model_id
+  #       info(logger, glue("Model selected: {Model$model_id}"))
+  #       save(Model, file = "Model.RData")
+  #       #save the model object to GCS
+  #       info(logger, upload_blob(storage_client, bucket, local_model_file, remote_model_file))
+  #       output$saveMessage <- renderText(glue('Model {Model$model_id} was saved to GCS'))
+  #       
+  #     })
+  #   }else{
+  #     print('Model was not found in remote storage')
+  #   }
+  # })
+  
+  
+  #3.3.3 budget optimizer ----
+  
+  
+  info(logger,glue("Loading model file {local_model_file}"))
+  load(local_model_file)
+  #scalable channel constraint selectors
+  output$channelConstr <- renderUI({
+    lapply(Model$InputCollect$paid_media_vars, 
+           function(i){sliderInput(
+             inputId = paste0("constr_", i), i, 0.01, 2, value = c(0.7, 1.5), step = 0.1)
+           }
+    )
+  })
+  #if a model has already been selected
+  if (!is.null(Model$model_id)){
+    
+    #historical overview date range
+    output$DateSelectorOverview <- renderUI({
+      box(width = NULL, status = "warning",
+          title = "Date range",
+          dateInput("start_date_overview", label = "Start Date",
+                    min = Model$InputCollect$window_start,
+                    max = Model$InputCollect$window_end,
+                    value = if(Model$InputCollect$window_start != input$start_date_overview){input$start_date_overview}else{Model$InputCollect$window_start}
+          ),
+          
+          dateInput("end_date_overview", label = "End Date", 
+                    min = Model$InputCollect$window_start,
+                    max = Model$InputCollect$window_end,
+                    value = if(Model$InputCollect$window_end != input$end_date_overview){input$end_date_overview}else{Model$InputCollect$window_end}
+          )
       )
     })
-    #if a model has already been selected
-    if (!is.null(Model$model_id)){
-      
-      #historical overview date range
-      output$DateSelectorOverview <- renderUI({
-        box(width = NULL, status = "warning",
-            title = "Date range",
-            dateInput("start_date_overview", label = "Start Date",
-                      min = Model$InputCollect$window_start,
-                      max = Model$InputCollect$window_end,
-                      value = if(Model$InputCollect$window_start != input$start_date_overview){input$start_date_overview}else{Model$InputCollect$window_start}
-                      ),
-            
-            dateInput("end_date_overview", label = "End Date", 
-                      min = Model$InputCollect$window_start,
-                      max = Model$InputCollect$window_end,
-                      value = if(Model$InputCollect$window_end != input$end_date_overview){input$end_date_overview}else{Model$InputCollect$window_end}
-                      )
-        )
-      })
-      #revenue over time line chart
-      output$line_chart_rev_week <- renderPlotly({line_chart_rev_week(Model, input$start_date_overview, input$end_date_overview)})
-      #share media spend over time
-      output$bar_chart_media_spend_week <- renderPlotly({bar_chart_media_spend_week(Model, input$start_date_overview, input$end_date_overview)})
-      
-      #historical contribution date range
-      output$DateSelectorContrib <- renderUI({
-        box(width = NULL, status = "warning",
-            title = "Date range",
-            dateInput("start_date_contrib", label = "Start Date",
-                      min = Model$InputCollect$window_start,
-                      max = Model$InputCollect$window_end,
-                      value = if(Model$InputCollect$window_start != input$start_date_overview){input$start_date_overview}else{Model$InputCollect$window_start}
-                      ),
-            
-            dateInput("end_date_contrib", label = "End Date", 
-                      min = Model$InputCollect$window_start,
-                      max = Model$InputCollect$window_end,
-                      value = if(Model$InputCollect$window_end != input$end_date_overview){input$end_date_overview}else{Model$InputCollect$window_end}
-                      )
-        )
-      })
-      #update the inputs to match each other
-
-      #Global channel ROI
-      output$channel_roi <- renderPlotly({PlotHistorical(Model, input$start_date_contrib, input$end_date_contrib)$channel_roi})
-      #channel contribution pie chart
-      output$pie_chart_contribution <- renderPlot({pie_chart_media_contribution(Model, input$end_date_contrib, input$endDate)})
-      
-      #dry run of the allocator
-      AllocatorCollect <- Allocate(InputCollect = Model$InputCollect, 
-                                   OutputCollect= Model$OutputCollect, 
-                                   select_model = Model$model_id, 
-                                   scenario ="max_historical_response",
-                                   channel_constr_low = rep(0.7, each = length(Model$InputCollect$paid_media_vars)), 
-                                   channel_constr_up = rep(1.5, each = length(Model$InputCollect$paid_media_vars))
+    #revenue over time line chart
+    output$line_chart_rev_week <- renderPlotly({line_chart_rev_week(Model, input$start_date_overview, input$end_date_overview)})
+    #share media spend over time
+    output$bar_chart_media_spend_week <- renderPlotly({bar_chart_media_spend_week(Model, input$start_date_overview, input$end_date_overview)})
+    
+    #historical contribution date range
+    output$DateSelectorContrib <- renderUI({
+      box(width = NULL, status = "warning",
+          title = "Date range",
+          dateInput("start_date_contrib", label = "Start Date",
+                    min = Model$InputCollect$window_start,
+                    max = Model$InputCollect$window_end,
+                    value = if(Model$InputCollect$window_start != input$start_date_overview){input$start_date_overview}else{Model$InputCollect$window_start}
+          ),
+          
+          dateInput("end_date_contrib", label = "End Date", 
+                    min = Model$InputCollect$window_start,
+                    max = Model$InputCollect$window_end,
+                    value = if(Model$InputCollect$window_end != input$end_date_overview){input$end_date_overview}else{Model$InputCollect$window_end}
+          )
       )
-      output$p12 <- renderPlotly(PlotAllocator(AllocatorCollect)$p1)
-      output$p13 <- renderPlotly(PlotAllocator(AllocatorCollect)$p2)
-      output$p14 <- renderPlotly(PlotAllocator(AllocatorCollect)$p3)
-
-      #new run of the allocator
-      observeEvent(input$optimizeButton,{
-        channel_consrt_low_val <- lapply(Model$InputCollect$paid_media_vars, function(i){input[[paste0("constr_", i)]][1]})
-        channel_consrt_up_val <- lapply(Model$InputCollect$paid_media_vars, function(i){input[[paste0("constr_", i)]][2]})
-        scenario <- input$scenario
-        expected_spend <- input$expected_spend
-        expected_spend_days <- input$expected_spend_days
-        #run the allocator (reactive so that the loading effect takes place as soon as it is refreshed)
-        AllocatorCollect <- reactive({Allocate(Model$InputCollect, 
-                                               Model$OutputCollect, 
-                                               Model$model_id, 
-                                               scenario = scenario,
-                                               channel_constr_low = unlist(channel_consrt_low_val), 
-                                               channel_constr_up = unlist(channel_consrt_up_val),
-                                               expected_spend = expected_spend,
-                                               expected_spend_days = expected_spend_days
-        )})
-        
-        output$p12 <- renderPlotly(PlotAllocator(AllocatorCollect())$p1)
-        output$p13 <- renderPlotly(PlotAllocator(AllocatorCollect())$p2)
-        output$p14 <- renderPlotly(PlotAllocator(AllocatorCollect())$p3)
-
-      })
-
-    }else{
-      print('Model does not contain a selected model_id')
-    }
+    })
+    #update the inputs to match each other
+    
+    #Global channel ROI
+    output$channel_roi <- renderPlotly({PlotHistorical(Model, input$start_date_contrib, input$end_date_contrib)$channel_roi})
+    #channel contribution pie chart
+    output$pie_chart_contribution <- renderPlot({pie_chart_media_contribution(Model, input$end_date_contrib, input$endDate)})
+    
+    #dry run of the allocator
+    browser()
+    AllocatorCollect <- Allocate(InputCollect = Model$InputCollect, 
+                                 OutputCollect= Model$OutputCollect, 
+                                 select_model = Model$model_id, 
+                                 scenario ="max_historical_response",
+                                 channel_constr_low = rep(0.7, each = length(Model$InputCollect$paid_media_vars)), 
+                                 channel_constr_up = rep(1.5, each = length(Model$InputCollect$paid_media_vars))
+    )
+    output$p12 <- renderPlotly(PlotAllocator(AllocatorCollect)$p1)
+    output$p13 <- renderPlotly(PlotAllocator(AllocatorCollect)$p2)
+    output$p14 <- renderPlotly(PlotAllocator(AllocatorCollect)$p3)
+    
+    #new run of the allocator
+    observeEvent(input$optimizeButton,{
+      channel_consrt_low_val <- lapply(Model$InputCollect$paid_media_vars, function(i){input[[paste0("constr_", i)]][1]})
+      channel_consrt_up_val <- lapply(Model$InputCollect$paid_media_vars, function(i){input[[paste0("constr_", i)]][2]})
+      scenario <- input$scenario
+      expected_spend <- input$expected_spend
+      expected_spend_days <- input$expected_spend_days
+      #run the allocator (reactive so that the loading effect takes place as soon as it is refreshed)
+      AllocatorCollect <- reactive({Allocate(Model$InputCollect, 
+                                             Model$OutputCollect, 
+                                             Model$model_id, 
+                                             scenario = scenario,
+                                             channel_constr_low = unlist(channel_consrt_low_val), 
+                                             channel_constr_up = unlist(channel_consrt_up_val),
+                                             expected_spend = expected_spend,
+                                             expected_spend_days = expected_spend_days
+      )})
+      
+      output$p12 <- renderPlotly(PlotAllocator(AllocatorCollect())$p1)
+      output$p13 <- renderPlotly(PlotAllocator(AllocatorCollect())$p2)
+      output$p14 <- renderPlotly(PlotAllocator(AllocatorCollect())$p3)
+      
+    })
+    
   }else{
-    print('Model was not found in remote storage')
+    print('Model does not contain a selected model_id')
   }
   
-#log file ----
+  
+  #log file ----
   #3.2.2 reactive logs
   observeEvent(input$RefreshLogs, {
     logdata <- read.delim('serverData.log',header=FALSE)
