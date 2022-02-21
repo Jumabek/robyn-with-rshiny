@@ -1,0 +1,11 @@
+name: robynGUI
+title:
+username:
+account: charlesshaw
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 5699430
+bundleId: 5602540
+url: https://charlesshaw.shinyapps.io/robynGUI/
+when: 1645459726.52304
+lastSyncTime: 1645459726.52308

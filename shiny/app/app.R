@@ -30,24 +30,32 @@ source("plot.R")
 
 #0.3 remote storage
 bucket = 'robyn-test-bucket'
-local_model_file = '/Users/jumabek/code/fixedpoint/robyn-with-rshiny/shiny/app/JumaModel3.RData'
-#remote_model_file = 'data/JumaModel2.RData'
+
+
+local_model_file = 'JumaModel3.RData'
+print("Local file")
+print(local_model_file)
+print(getwd())
+print(list.files())
+print(list.dirs())
+
 info(logger, glue('Prod set to {prod}'))
 
 if(prod == FALSE){
-  storage_client = storage_client_with_creds('./credentials/robyn-test-2-672df5a3c62a.json')
+  #storage_client = storage_client_with_creds('./credentials/robyn-test-2-672df5a3c62a.json')
   info(logger, glue('Using json file as credentials'))
 } else {
   #TODO install the libraries and environment as part as the dockerfile
-  # virtualenv_create("r-reticulate")
-  # virtualenv_exists("r-reticulate")
-  # use_virtualenv("r-reticulate", required = TRUE)
-  use_condaenv("r-reticulate")
+  virtualenv_create("r-reticulate")
+  virtualenv_exists("r-reticulate")
+  use_virtualenv("r-reticulate", required = TRUE)
+  
+  #use_condaenv("r-reticulate")
   py_install("nevergrad", pip = TRUE)
   py_install("google-cloud-storage", pip = TRUE)
   py_config()
   
-  source_python("gcpSync.py")# uses google library
+  #source_python("gcpSync.py")# uses google library
   #storage_client = storage_client_with_creds('./credentials/robyn-test-2-672df5a3c62a.json') #storage_client_without_creds()
   info(logger, glue('Using default credentials'))
 }
