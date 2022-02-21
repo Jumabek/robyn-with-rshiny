@@ -24,7 +24,7 @@ Allocate <- function(InputCollect,
   # Run the "max_historical_response" scenario: "What's the revenue lift potential with the
   # same historical spend level and what is the spend mix?"
 
-  browser()
+
   AllocatorCollect <- robyn_allocator(
       InputCollect  = InputCollect
     , OutputCollect = OutputCollect

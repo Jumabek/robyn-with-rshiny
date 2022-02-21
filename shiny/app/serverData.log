@@ -441,3 +441,39 @@ INFO  [2022-02-20 01:19:51] Loading model file /Users/jumabek/code/fixedpoint/ro
 INFO  [2022-02-20 01:29:26] Prod set to TRUE
 INFO  [2022-02-20 01:29:28] Using default credentials
 INFO  [2022-02-20 01:29:28] Loading model file /Users/jumabek/code/fixedpoint/robyn-with-rshiny/shiny/app/Model.RData
+INFO  [2022-02-21 17:40:46] Prod set to TRUE
+INFO  [2022-02-21 17:40:51] Using default credentials
+INFO  [2022-02-21 17:40:51] Loading model file /Users/jumabek/code/fixedpoint/robyn-with-rshiny/shiny/app/Model.RData
+INFO  [2022-02-21 17:49:50] Prod set to TRUE
+INFO  [2022-02-21 17:49:52] Using default credentials
+INFO  [2022-02-21 17:49:52] Loading model file /Users/jumabek/code/fixedpoint/robyn-with-rshiny/shiny/app/Model.RData
+INFO  [2022-02-21 18:06:21] Prod set to TRUE
+INFO  [2022-02-21 18:06:23] Using default credentials
+INFO  [2022-02-21 18:06:23] Loading model file /Users/jumabek/code/fixedpoint/robyn-with-rshiny/shiny/app/JumaModel.RData
+INFO  [2022-02-21 18:09:37] Prod set to TRUE
+INFO  [2022-02-21 18:09:39] Using default credentials
+INFO  [2022-02-21 18:09:39] Loading model file /Users/jumabek/code/fixedpoint/robyn-with-rshiny/shiny/app/JumaModel2.RData
+INFO  [2022-02-21 18:16:24] Prod set to TRUE
+INFO  [2022-02-21 18:16:26] Using default credentials
+INFO  [2022-02-21 18:16:26] Loading model file /Users/jumabek/code/fixedpoint/robyn-with-rshiny/shiny/app/JumaModel2.RData
+INFO  [2022-02-21 18:17:20] Prod set to TRUE
+INFO  [2022-02-21 18:17:22] Using default credentials
+INFO  [2022-02-21 18:17:22] Loading model file /Users/jumabek/code/fixedpoint/robyn-with-rshiny/shiny/app/JumaModel3.RData
+INFO  [2022-02-21 18:18:45] User admin logged in
+INFO  [2022-02-21 18:51:18] Prod set to TRUE
+INFO  [2022-02-21 18:51:20] Using default credentials
+INFO  [2022-02-21 18:51:20] Loading model file /Users/jumabek/code/fixedpoint/robyn-with-rshiny/shiny/app/JumaModel3.RData
+INFO  [2022-02-21 18:54:42] Prod set to TRUE
+INFO  [2022-02-21 18:54:44] Using default credentials
+INFO  [2022-02-21 18:54:44] Loading model file /Users/jumabek/code/fixedpoint/robyn-with-rshiny/shiny/app/JumaModel3.RData
+INFO  [2022-02-21 18:55:33] Prod set to TRUE
+INFO  [2022-02-21 18:55:35] Using default credentials
+INFO  [2022-02-21 18:55:35] Loading model file /Users/jumabek/code/fixedpoint/robyn-with-rshiny/shiny/app/JumaModel3.RData
+INFO  [2022-02-21 19:08:28] Prod set to TRUE
+INFO  [2022-02-21 19:08:30] Using default credentials
+INFO  [2022-02-21 19:08:30] Loading model file /Users/jumabek/code/fixedpoint/robyn-with-rshiny/shiny/app/JumaModel3.RData
+INFO  [2022-02-21 19:09:18] User admin logged in
+INFO  [2022-02-21 19:10:24] Prod set to TRUE
+INFO  [2022-02-21 19:10:25] Using default credentials
+INFO  [2022-02-21 19:10:26] Loading model file /Users/jumabek/code/fixedpoint/robyn-with-rshiny/shiny/app/JumaModel3.RData
+INFO  [2022-02-21 19:10:45] User admin logged in

@@ -30,8 +30,8 @@ source("plot.R")
 
 #0.3 remote storage
 bucket = 'robyn-test-bucket'
-local_model_file = '/Users/jumabek/code/fixedpoint/robyn-with-rshiny/shiny/app/Model.RData'
-#remote_model_file = 'data/JumaModel.RData'
+local_model_file = '/Users/jumabek/code/fixedpoint/robyn-with-rshiny/shiny/app/JumaModel3.RData'
+#remote_model_file = 'data/JumaModel2.RData'
 info(logger, glue('Prod set to {prod}'))
 
 if(prod == FALSE){
@@ -89,7 +89,7 @@ credentials = data.frame(
 )
 
 #2 UI ----
-header <- dashboardHeader( title = "55 | Marketing Mix Modeling", titleWidth = 300, uiOutput("logoutbtn"))
+header <- dashboardHeader( title = "FixedPoint | Marketing Mix Modeling", titleWidth = 300, uiOutput("logoutbtn"))
 sidebar <- dashboardSidebar(uiOutput("sidebarpanel")) 
 body <- dashboardBody(shinyDashboardThemes(theme = "grey_dark"), shinyjs::useShinyjs(), uiOutput("body"))
 loader <- (options(spinner.color="#0dc5c1", spinner.type  = 7))
@@ -346,10 +346,12 @@ server <- function(input, output, session) {
   observeEvent(input$importModelButton, {
     
     
-    
+    print(Model$OutputCollect$plot_folder)
     #download the model
     info(logger, glue("Checking if {local_model_file} exists"))
     load(local_model_file)
+    Model$OutputCollect$plot_folder <- file.path(getwd(),'output/out/')  # this ensures model has the right plot folder for allocator plots to be saved
+    
     output$modelSolutions <- renderUI({selectInput("model_id","Select Model", Model$OutputCollect$allSolutions)})
     output$modelSelection <- renderUI({actionButton("selectModelButton", "Choose this models")})
     
@@ -362,38 +364,14 @@ server <- function(input, output, session) {
     })
   })
   
-  # #3.3.2 import model ----
-  # observeEvent(input$importModelButton, {
-  #   exists <- blob_exists(storage_client, bucket, remote_model_file)
-  #   info(logger, glue('Checking if remote file exists in {bucket}: {exists}'))
-  #   if (exists) {
-  #     #download the model
-  #     info(logger, download_blob(storage_client, bucket, remote_model_file, local_model_file))
-  #     load(local_model_file)
-  #     output$modelSolutions <- renderUI({selectInput("model_id","Select Model", Model$OutputCollect$allSolutions)})
-  #     output$modelSelection <- renderUI({actionButton("selectModelButton", "Choose this models")})
-  #     
-  #     #once the model is selected, save the selected id to the model object
-  #     observeEvent(input$selectModelButton, {
-  #       Model$model_id <- input$model_id
-  #       info(logger, glue("Model selected: {Model$model_id}"))
-  #       save(Model, file = "Model.RData")
-  #       #save the model object to GCS
-  #       info(logger, upload_blob(storage_client, bucket, local_model_file, remote_model_file))
-  #       output$saveMessage <- renderText(glue('Model {Model$model_id} was saved to GCS'))
-  #       
-  #     })
-  #   }else{
-  #     print('Model was not found in remote storage')
-  #   }
-  # })
-  
-  
+
   #3.3.3 budget optimizer ----
   
   
   info(logger,glue("Loading model file {local_model_file}"))
   load(local_model_file)
+  Model$OutputCollect$plot_folder <- file.path(getwd(),'output/out/')  # this ensures model has the right plot folder for allocator plots to be saved
+  
   #scalable channel constraint selectors
   output$channelConstr <- renderUI({
     lapply(Model$InputCollect$paid_media_vars, 
@@ -452,7 +430,7 @@ server <- function(input, output, session) {
     output$pie_chart_contribution <- renderPlot({pie_chart_media_contribution(Model, input$end_date_contrib, input$endDate)})
     
     #dry run of the allocator
-    browser()
+    
     AllocatorCollect <- Allocate(InputCollect = Model$InputCollect, 
                                  OutputCollect= Model$OutputCollect, 
                                  select_model = Model$model_id, 
