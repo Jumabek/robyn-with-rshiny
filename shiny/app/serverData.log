@@ -493,3 +493,6 @@ INFO  [2022-02-21 20:22:12] Prod set to TRUE
 INFO  [2022-02-21 20:22:16] Using default credentials
 INFO  [2022-02-21 20:22:16] Loading model file JumaModel3.RData
 INFO  [2022-02-21 20:22:31] User admin logged in
+INFO  [2022-02-22 10:09:53] Prod set to TRUE
+INFO  [2022-02-22 10:10:03] Using default credentials
+INFO  [2022-02-22 10:10:03] Loading model file JumaModel3.RData

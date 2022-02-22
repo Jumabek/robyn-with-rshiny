@@ -23,7 +23,7 @@ Allocate <- function(InputCollect,
   # Run ?robyn_allocator to check parameter definition
   # Run the "max_historical_response" scenario: "What's the revenue lift potential with the
   # same historical spend level and what is the spend mix?"
-
+  
 
   AllocatorCollect <- robyn_allocator(
       InputCollect  = InputCollect

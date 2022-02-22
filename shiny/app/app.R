@@ -103,11 +103,14 @@ body <- dashboardBody(shinyDashboardThemes(theme = "grey_dark"), shinyjs::useShi
 loader <- (options(spinner.color="#0dc5c1", spinner.type  = 7))
 ui<-dashboardPage(header, sidebar, body, loader)
 
+print("(Creating) #3 SERVER ----")
 #3 SERVER ----
 server <- function(input, output, session) {
   login = FALSE
+  print("USER <- reactiveValues(login = login)")
   USER <- reactiveValues(login = login)
   
+  print("#3.1 loggin logic ----")
   #3.1 loggin logic ----  
   observe({ 
     if (USER$login == FALSE) {
@@ -134,6 +137,7 @@ server <- function(input, output, session) {
     }    
   })
   
+  print("#3.2 reactive UI elements ----")
   #3.2 reactive UI elements ----    
   output$logoutbtn <- renderUI({
     req(USER$login)
@@ -144,6 +148,7 @@ server <- function(input, output, session) {
                     font-weight: bold; margin:5px; padding: 10px;")
   })
   
+  print("#3.2.1 sidebar")
   #3.2.1 sidebar 
   output$sidebarpanel <- renderUI({
     if (USER$login == TRUE ){ 
@@ -173,6 +178,7 @@ server <- function(input, output, session) {
     }
   })
   
+  print("#3.2.1 body / UI")
   #3.2.1 body / UI
   output$body <- renderUI({
     if (USER$login == TRUE ) {
@@ -332,6 +338,7 @@ server <- function(input, output, session) {
   })
   
   #3.3 Processing logic ----  
+  print("#3.3.1 train model ----")
   #3.3.1 train model ----
   observeEvent(input$trainButton, {
     show_modal_spinner(
@@ -350,6 +357,7 @@ server <- function(input, output, session) {
     remove_modal_spinner()
   })
   
+  print("#3.3.2 import model ----")
   #3.3.2 import model ----
   observeEvent(input$importModelButton, {
     
@@ -357,8 +365,9 @@ server <- function(input, output, session) {
     print(Model$OutputCollect$plot_folder)
     #download the model
     info(logger, glue("Checking if {local_model_file} exists"))
+    print("load(local_model_file)")
     load(local_model_file)
-    Model$OutputCollect$plot_folder <- file.path(getwd(),'output/out/')  # this ensures model has the right plot folder for allocator plots to be saved
+    Model$OutputCollect$plot_folder <- 'output/out/'  # this ensures model has the right plot folder for allocator plots to be saved
     
     output$modelSolutions <- renderUI({selectInput("model_id","Select Model", Model$OutputCollect$allSolutions)})
     output$modelSelection <- renderUI({actionButton("selectModelButton", "Choose this models")})
@@ -378,7 +387,7 @@ server <- function(input, output, session) {
   
   info(logger,glue("Loading model file {local_model_file}"))
   load(local_model_file)
-  Model$OutputCollect$plot_folder <- file.path(getwd(),'output/out/')  # this ensures model has the right plot folder for allocator plots to be saved
+  Model$OutputCollect$plot_folder <- 'output/out/'  # this ensures model has the right plot folder for allocator plots to be saved
   
   #scalable channel constraint selectors
   output$channelConstr <- renderUI({
@@ -495,6 +504,6 @@ server <- function(input, output, session) {
   })
 }
 
-runApp(list(ui = ui, server = server), launch.browser = TRUE, host='0.0.0.0', port=3838)
+#runApp(list(ui = ui, server = server), launch.browser = TRUE, host='0.0.0.0', port=3838)
 
 
