@@ -1,4 +1,2 @@
 library("shiny")
-
-print(getwd())
-runApp("app")
+runApp("shiny/app")

@@ -1,0 +1,55 @@
+#TODO
+
+##COSMETIQUE
+
+#historique
+
+--revenue per week
+axe des ordonn�es en blanc
+echelle propre sans �criture scientifique ($ ou euro)
+modificationd de la couleur du graph (points et ligne)
+
+--media spend per week
+transformer en aires
+
+-ROI
+changer la formule de calcul du ROI
+affichage des ROI sur les barres
+rotation 45 ou 90 degr�s des abscices
+renomer laxe des x (ooh_S)
+
+--Pie chart
+trouver une solution pour le rendu interactif
+suppression du fond blanc
+l�gende int�gr�e
+pourcentage � lext�rieur et en blanc
+
+
+#Prediction
+
+response curve
+supprimer les titres du graph
+trouver un moyen de rendre les spend lisibles
+echelle de X en $ ou ??? et format nombre
+couleur ? 
+  
+--optimized response
+couleur
+chiffre � d�caler
+mettre lunit�e $ ou ???
+remettre laxe des ordon��es
+
+--selector
+renommer les channels
+
+###FRONT
+--ajout dune feuille pour ajotuer des visualisations granulaires
+--division historique en deux onglets
+---- 1 er onglet = r�sultats spend historique
+----2 eme = impacte des caneaux et l impacte des segments (cat�gorie utilisateur)
+contribution media avec d�compotision temporelle
+waterfall plot
+
+###BACK
+--scenario comparison
+
